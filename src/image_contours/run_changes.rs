@@ -1,9 +1,9 @@
 use super::row_changes::END;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum RunChangeKind { Top, Both, Bottom }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct RunChange {
     pub kind: RunChangeKind,
     pub x: u32,
@@ -42,5 +42,35 @@ impl<'a> Iterator for RunChanges<'a> {
         } else {
             None
         }
+    }
+}
+
+
+// ---------
+
+#[cfg(test)]
+mod tests {
+    use test_case::test_case;
+    use super::{*, RunChangeKind::*};
+
+    #[test_case(&[END], &[END], vec![])]
+    #[test_case(&[0, END], &[END], vec![RunChange{ kind: Top, x: 0 }])]
+    #[test_case(&[END], &[0, END], vec![RunChange{ kind: Bottom, x: 0 }])]
+    #[test_case(&[0, END], &[0, END], vec![RunChange{ kind: Both, x: 0 }])]
+    #[test_case(
+        &[1, 38, 39, 41, END],
+        &[1, 2, 39, 42, END],
+        vec![
+            RunChange{ kind: Both, x: 1 },
+            RunChange{ kind: Bottom, x: 2 },
+            RunChange{ kind: Top, x: 38 },
+            RunChange{ kind: Both, x: 39 },
+            RunChange{ kind: Top, x: 41 },
+            RunChange{ kind: Bottom, x: 42 },
+        ]
+    )]
+    fn pixel_row(run_top: &[u32], run_bottom: &[u32], expected: Vec<RunChange>) {
+        let actual = RunChanges::new(run_top, run_bottom);
+        assert!(actual.eq(expected));
     }
 }

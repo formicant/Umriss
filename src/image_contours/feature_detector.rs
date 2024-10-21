@@ -1,6 +1,6 @@
 use super::run_changes::{RunChangeKind, RunChange};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum FeatureKind {
     None,
     Head,
@@ -11,7 +11,7 @@ pub enum FeatureKind {
     OuterFoot,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Feature {
     pub kind: FeatureKind,
     pub x: u32,
