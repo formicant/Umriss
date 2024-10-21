@@ -29,14 +29,3 @@ impl std::fmt::Debug for ContourPoint {
         write!(f, "({:4}, {:4}) {:5} {:?}", self.x, self.y, self.next, self.relation)
     }
 }
-
-#[derive(Copy, Clone)]
-pub enum Feature {
-    None,
-    Head,
-    Vertical,
-    LeftShelf,
-    RightShelf,
-    InnerFoot,
-    OuterFoot,
-}
