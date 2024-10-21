@@ -5,13 +5,14 @@ mod feature_detector;
 mod hierarchy;
 
 use std::{iter, mem, collections::VecDeque};
-use image::{GrayImage, Luma};
+use image::GrayImage;
 use types::ContourPoint;
 use row_changes::RowChanges;
 use run_changes::RunChanges;
 use feature_detector::{FeatureKind, FeatureDetector};
 use hierarchy::Hierarchy;
 
+#[derive(Copy, Clone, PartialEq)]
 struct QueueItem {
     point: usize,
     head: usize,
@@ -22,15 +23,12 @@ pub struct ImageContours {
 }
 
 impl ImageContours {
-    pub fn new<F>(image: &GrayImage, binarize: F) -> Self
-        where  F: Fn(&Luma<u8>) -> bool {
-        
+    pub fn new(image: &GrayImage) -> Self {
         let (width, height) = image.dimensions();
-        
         let root = ContourPoint::new(width, height);
         let mut contour_points = vec![root];
         
-        let mut queue = VecDeque::<QueueItem>::new();
+        let mut queue = VecDeque::new();
         let mut feature_detector = FeatureDetector::new();
         let mut hierarchy = Hierarchy::new();
         
@@ -50,8 +48,8 @@ impl ImageContours {
 
             let y = row_index as u32;
             for change in RunChanges::new(&run_top, &run_bottom) {
-                let feature = feature_detector.step(change);
                 let new_point = contour_points.len();
+                let feature = feature_detector.step(change);
                 let x = feature.x;
                 match feature.kind {
                     FeatureKind::Head => {
@@ -101,7 +99,6 @@ impl ImageContours {
                 }
             }
         }
-        
         debug_assert!(queue.is_empty());
         
         ImageContours { contour_points }
