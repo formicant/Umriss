@@ -4,7 +4,7 @@ mod run_changes;
 mod feature_detector;
 mod hierarchy;
 
-use std::{collections::VecDeque, mem};
+use std::{iter, mem, collections::VecDeque};
 use image::{GrayImage, Luma};
 use types::ContourPoint;
 use row_changes::RowChanges;
@@ -31,23 +31,26 @@ impl ImageContours {
         let mut contour_points = vec![root];
         
         let mut queue = VecDeque::<QueueItem>::new();
-        let mut state_machine = FeatureDetector::new();
+        let mut feature_detector = FeatureDetector::new();
         let mut hierarchy = Hierarchy::new();
         
         let run_capacity = width as usize + 2;
         let mut run_top = Vec::with_capacity(run_capacity);
         let mut run_bottom = Vec::with_capacity(run_capacity);
-        run_bottom.push(u32::MAX);
+        run_bottom.extend(RowChanges::empty());
         
-        let last_row = GrayImage::new(width, 1);
-        for (row_index, row) in image.rows().chain(last_row.rows()).enumerate() {
+        let rows = image.rows()
+            .map(|row| RowChanges::from(row))
+            .chain(iter::once(RowChanges::empty()));
+        
+        for (row_index, row_changes) in rows.enumerate() {
             mem::swap(&mut run_top, &mut run_bottom);
             run_bottom.clear();
-            run_bottom.extend(RowChanges::from(row));
+            run_bottom.extend(row_changes);
 
             let y = row_index as u32;
             for change in RunChanges::new(&run_top, &run_bottom) {
-                let feature = state_machine.step(change);
+                let feature = feature_detector.step(change);
                 let new_point = contour_points.len();
                 let x = feature.x;
                 match feature.kind {

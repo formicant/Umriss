@@ -1,5 +1,3 @@
-use std::iter;
-
 use super::row_changes::END;
 
 #[derive(Copy, Clone)]
@@ -21,10 +19,6 @@ pub struct RunChanges<'a> {
 impl<'a> RunChanges<'a> {
     pub fn new(run_top: &'a[u32], run_bottom: &'a[u32]) -> Self {
         Self { run_top, run_bottom, top_index: 0, bottom_index: 0 }
-    }
-    
-    pub fn empty() -> iter::Once<u32> {
-        iter::once(END)
     }
 }
 
