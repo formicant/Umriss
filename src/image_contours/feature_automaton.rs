@@ -17,12 +17,12 @@ pub struct Feature {
     pub x: u32,
 }
 
-pub struct FeatureDetector {
+pub struct FeatureAutomaton {
     state: usize,
     current_x: u32,
 }
 
-impl FeatureDetector {
+impl FeatureAutomaton {
     pub fn new() -> Self {
         Self { state: 0, current_x: 0 }
     }

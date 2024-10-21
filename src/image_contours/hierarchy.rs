@@ -1,3 +1,5 @@
+use std::process::Child;
+
 use super::types::{Relation, ContourPoint};
 
 pub struct Hierarchy {
@@ -36,6 +38,18 @@ impl Hierarchy {
             contour_points[from_index].relation = Relation::Alias(to_index);
             if self.current_contour == from_index {
                 self.current_contour = to_index;
+            }
+        }
+    }
+    
+    pub fn parents_to_children(contour_points: &mut [ContourPoint]) {
+        for index in 1..contour_points.len() {
+            if let Relation::Parent(p) = contour_points[index].relation {
+                let parent = unalias(contour_points, p);
+                if let Relation::Child(child) = contour_points[parent].relation {
+                    contour_points[contour_points[index].next].relation = Relation::Sibling(child);
+                }
+                contour_points[parent].relation = Relation::Child(index);
             }
         }
     }

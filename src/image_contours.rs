@@ -1,15 +1,15 @@
 mod types;
 mod row_changes;
 mod run_changes;
-mod feature_detector;
+mod feature_automaton;
 mod hierarchy;
 
 use std::{iter, mem, collections::VecDeque};
 use image::GrayImage;
-use types::ContourPoint;
+use types::{ContourPoint, Relation};
 use row_changes::RowChanges;
 use run_changes::RunChanges;
-use feature_detector::{FeatureKind, FeatureDetector};
+use feature_automaton::{FeatureKind, FeatureAutomaton};
 use hierarchy::Hierarchy;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -29,7 +29,7 @@ impl ImageContours {
         let mut contour_points = vec![root];
         
         let mut queue = VecDeque::new();
-        let mut feature_detector = FeatureDetector::new();
+        let mut feature_detector = FeatureAutomaton::new();
         let mut hierarchy = Hierarchy::new();
         
         let run_capacity = width as usize + 2;
@@ -101,6 +101,7 @@ impl ImageContours {
         }
         debug_assert!(queue.is_empty());
         
+        Hierarchy::parents_to_children(&mut contour_points);
         ImageContours { contour_points }
     }
     
@@ -108,4 +109,74 @@ impl ImageContours {
         let root = &self.contour_points[0];
         (root.x, root.y)
     }
+    
+    pub fn outermost_contours<'a>(&'a self) -> SiblingContours<'a> {
+        if let Relation::Child(first_child) = self.contour_points[0].relation {
+            SiblingContours { contour_points: &self.contour_points, current_index: Some(first_child) }
+        } else {
+            SiblingContours { contour_points: &self.contour_points, current_index: None }
+        }
+    }
 }
+
+pub struct SiblingContours<'a> {
+    contour_points: &'a[ContourPoint],
+    current_index: Option<usize>,
+}
+
+impl<'a> Iterator for SiblingContours<'a> {
+    type Item = Contour<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current_index {
+            Some(index) => {
+                let point = &self.contour_points[index];
+                let next_point = &self.contour_points[point.next];
+                self.current_index = if let Relation::Sibling(sibling) = next_point.relation {
+                    Some(sibling)
+                } else {
+                    None
+                };
+                Some(Contour { contour_points: self.contour_points, start_index: index })
+            },
+            None => None,
+        }
+    }
+}
+
+pub struct Contour<'a> {
+    contour_points: &'a[ContourPoint],
+    start_index: usize,
+}
+
+impl<'a> Contour<'a> {
+    pub fn control_points(&self) -> ControlPoints<'a> {
+        ControlPoints { contour_points: self.contour_points, start_index: self.start_index, current_index: Some(self.start_index) }
+    }
+}
+
+pub struct ControlPoints<'a> {
+    contour_points: &'a[ContourPoint],
+    start_index: usize,
+    current_index: Option<usize>,
+}
+
+impl<'a> Iterator for ControlPoints<'a> {
+    type Item = (u32, u32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current_index {
+            Some(index) => {
+                let point = &self.contour_points[index];
+                self.current_index = if point.next != self.start_index {
+                    Some(point.next)
+                } else {
+                    None
+                };
+                Some((point.x, point.y))
+            },
+            None => None,
+        }
+    }
+}
+

@@ -37,50 +37,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn get_svg(contours: &ImageContours, image_file: &str) -> String {
     let (width, height) = contours.dimensions();
-    let points = &contours.contour_points[..];
+    let mut paths = Vec::new();
     
-    let mut nodes = Vec::new();
-    let mut visited = vec![false; points.len()];
-    let mut index = 1;
-    while index > 0 {
-        let mut first = None;
-        loop {
-            let p = &points[index];
-            first = match first {
-                None => {
-                    nodes.push(format!("M {} {} ", p.x, p. y));
-                    Some(index)
-                },
-                Some(f) if f == index  => {
-                    nodes.push(format!("H {} Z ", p.x));
-                    None
-                },
-                _ => {
-                    nodes.push(format!("H {} V {} ", p.x, p.y));
-                    first
-                },
-            };
-            if first == None { break; }
-            visited[index] = true;
-            index = p.next;
+    for contour in contours.outermost_contours() {
+        let control_points: Vec<_> = contour.control_points().collect();
+        let (x0, y0) = control_points[0];
+        let mut nodes = vec![format!("M {} {} ", x0, y0)];
+        for (x, y) in control_points[1..].iter() {
+            nodes.push(format!("H {} V {} ", x, y));
         }
-        
-        loop {
-            index += 1;
-            if index >= points.len() {
-                index = 0;
-                break;
-            }
-            if !visited[index] {
-                break;
-            }
-        }
+        nodes.push(format!("H {} Z", x0));
+        paths.push(format!(r#"  <path fill="none" stroke="blue" stroke-width="0.1" d="{}" />
+"#, nodes.concat()));
     }
-    
-    let path = nodes.concat();
     
     return format!(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="{width}" height="{height}">
   <image href="{image_file}" image-rendering="pixelated" opacity="0.25" />
-  <path fill="none" stroke="blue" stroke-width="0.1" d="{path}" />
-</svg>"#);
+{}</svg>"#, paths.concat());
 }
