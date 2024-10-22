@@ -1,9 +1,9 @@
 use super::row_changes::END;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum RunChangeKind { Top, Both, Bottom }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RunChange {
     pub kind: RunChangeKind,
     pub x: u32,

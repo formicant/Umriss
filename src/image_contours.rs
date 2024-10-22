@@ -1,36 +1,32 @@
-mod types;
 mod row_changes;
 mod run_changes;
+mod table_builder;
 mod feature_automaton;
-mod hierarchy;
 
 use std::{iter, mem, collections::VecDeque};
 use image::GrayImage;
-use types::{ContourPoint, Relation};
+use table_builder::{Relation, TableBuilder, TableItem};
 use row_changes::RowChanges;
 use run_changes::RunChanges;
-use feature_automaton::{FeatureKind, FeatureAutomaton};
-use hierarchy::Hierarchy;
+use feature_automaton::{Feature, FeatureAutomaton, FeatureKind};
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct QueueItem {
-    point: usize,
+    index: usize,
     head: usize,
 }
 
 pub struct ImageContours {
-    pub contour_points: Vec<ContourPoint>,
+    pub table: Vec<TableItem>,
 }
 
 impl ImageContours {
     pub fn new(image: &GrayImage) -> Self {
         let (width, height) = image.dimensions();
-        let root = ContourPoint::new(width, height);
-        let mut contour_points = vec![root];
         
+        let mut table_builder = TableBuilder::new(width, height);
         let mut queue = VecDeque::new();
-        let mut feature_detector = FeatureAutomaton::new();
-        let mut hierarchy = Hierarchy::new();
+        let mut feature_automaton = FeatureAutomaton::new();
         
         let run_capacity = width as usize + 2;
         let mut run_top = Vec::with_capacity(run_capacity);
@@ -48,52 +44,46 @@ impl ImageContours {
 
             let y = row_index as u32;
             for change in RunChanges::new(&run_top, &run_bottom) {
-                let new_point = contour_points.len();
-                let feature = feature_detector.step(change);
-                let x = feature.x;
-                match feature.kind {
+                let Feature { kind, x } = feature_automaton.step(change);
+                match kind {
                     FeatureKind::Head => {
-                        contour_points.push(ContourPoint::new(x, y));
-                        queue.push_front(QueueItem { point: new_point, head: new_point });
-                        queue.push_front(QueueItem { point: new_point, head: new_point });
-                        hierarchy.add_contour(&mut contour_points, new_point);
+                        let new_index = table_builder.add_with_contour(x, y);
+                        queue.push_front(QueueItem { index: new_index, head: new_index });
+                        queue.push_front(QueueItem { index: new_index, head: new_index });
                     },
                     FeatureKind::Vertical => {
-                        debug_assert!(!queue.is_empty());
-                        let QueueItem { point, head } = queue.pop_back().unwrap();
-                        queue.push_front(QueueItem { point, head });
-                        hierarchy.cross_contour(&contour_points, head);
+                        debug_assert!(queue.len() >= 1);
+                        let QueueItem { index, head } = queue.pop_back().unwrap();
+                        queue.push_front(QueueItem { index, head });
+                        table_builder.cross_contour(head);
                     },
                     FeatureKind::LeftShelf => {
-                        debug_assert!(!queue.is_empty());
-                        let QueueItem { point: to_point, head } = queue.pop_back().unwrap();
-                        contour_points.push(ContourPoint::with_next(x, y, to_point));
-                        queue.push_front(QueueItem { point: new_point, head });
-                        hierarchy.cross_contour(&contour_points, head);
+                        debug_assert!(queue.len() >= 1);
+                        let QueueItem { index: to_index, head } = queue.pop_back().unwrap();
+                        let new_index = table_builder.add_with_next(x, y, to_index);
+                        table_builder.cross_contour(head);
+                        queue.push_front(QueueItem { index: new_index, head });
                     },
                     FeatureKind::RightShelf => {
-                        debug_assert!(!queue.is_empty());
-                        let QueueItem { point: from_point, head } = queue.pop_back().unwrap();
-                        contour_points.push(ContourPoint::new(x, y));
-                        contour_points[from_point].next = new_point;
-                        queue.push_front(QueueItem { point: new_point, head });
-                        hierarchy.cross_contour(&contour_points, head);
+                        debug_assert!(queue.len() >= 1);
+                        let QueueItem { index: from_index, head } = queue.pop_back().unwrap();
+                        let new_index = table_builder.add_with_previous(x, y, from_index);
+                        table_builder.cross_contour(head);
+                        queue.push_front(QueueItem { index: new_index, head });
                     },
                     FeatureKind::InnerFoot => {
                         debug_assert!(queue.len() >= 2);
-                        let QueueItem { point: from_point, head: from_head } = queue.pop_back().unwrap();
-                        let QueueItem { point: to_point, head: to_head } = queue.pop_back().unwrap();
-                        contour_points.push(ContourPoint::with_next(x, y, to_point));
-                        contour_points[from_point].next = new_point;
-                        hierarchy.combine_contours(&mut contour_points, to_head, from_head);
+                        let QueueItem { index: from_index, head: from_head } = queue.pop_back().unwrap();
+                        let QueueItem { index: to_index, head: to_head } = queue.pop_back().unwrap();
+                        table_builder.add_with_next_and_previous(x, y, to_index, from_index);
+                        table_builder.combine_contours(to_head, from_head);
                     },
                     FeatureKind::OuterFoot => {
                         debug_assert!(queue.len() >= 2);
-                        let QueueItem { point: to_point, head: to_head } = queue.pop_back().unwrap();
-                        let QueueItem { point: from_point, head: from_head } = queue.pop_back().unwrap();
-                        contour_points.push(ContourPoint::with_next(x, y, to_point));
-                        contour_points[from_point].next = new_point;
-                        hierarchy.combine_contours(&mut contour_points, from_head, to_head);
+                        let QueueItem { index: to_index, head: to_head } = queue.pop_back().unwrap();
+                        let QueueItem { index: from_index, head: from_head } = queue.pop_back().unwrap();
+                        table_builder.add_with_next_and_previous(x, y, to_index, from_index);
+                        table_builder.combine_contours(from_head, to_head);
                     },
                     FeatureKind::None => { }
                 }
@@ -101,26 +91,25 @@ impl ImageContours {
         }
         debug_assert!(queue.is_empty());
         
-        Hierarchy::parents_to_children(&mut contour_points);
-        ImageContours { contour_points }
+        ImageContours { table: table_builder.into() }
     }
     
     pub fn dimensions(&self) -> (u32, u32) {
-        let root = &self.contour_points[0];
+        let root = &self.table[0];
         (root.x, root.y)
     }
     
     pub fn outermost_contours<'a>(&'a self) -> SiblingContours<'a> {
-        if let Relation::Child(first_child) = self.contour_points[0].relation {
-            SiblingContours { contour_points: &self.contour_points, current_index: Some(first_child) }
+        if let Relation::Child(first_child) = self.table[0].relation {
+            SiblingContours { table: &self.table, current_index: Some(first_child) }
         } else {
-            SiblingContours { contour_points: &self.contour_points, current_index: None }
+            SiblingContours { table: &self.table, current_index: None }
         }
     }
 }
 
 pub struct SiblingContours<'a> {
-    contour_points: &'a[ContourPoint],
+    table: &'a[TableItem],
     current_index: Option<usize>,
 }
 
@@ -130,14 +119,14 @@ impl<'a> Iterator for SiblingContours<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_index {
             Some(index) => {
-                let point = &self.contour_points[index];
-                let next_point = &self.contour_points[point.next];
+                let point = &self.table[index];
+                let next_point = &self.table[point.next];
                 self.current_index = if let Relation::Sibling(sibling) = next_point.relation {
                     Some(sibling)
                 } else {
                     None
                 };
-                Some(Contour { contour_points: self.contour_points, start_index: index })
+                Some(Contour { table: self.table, start_index: index })
             },
             None => None,
         }
@@ -145,18 +134,18 @@ impl<'a> Iterator for SiblingContours<'a> {
 }
 
 pub struct Contour<'a> {
-    contour_points: &'a[ContourPoint],
+    table: &'a[TableItem],
     start_index: usize,
 }
 
 impl<'a> Contour<'a> {
     pub fn control_points(&self) -> ControlPoints<'a> {
-        ControlPoints { contour_points: self.contour_points, start_index: self.start_index, current_index: Some(self.start_index) }
+        ControlPoints { table: self.table, start_index: self.start_index, current_index: Some(self.start_index) }
     }
 }
 
 pub struct ControlPoints<'a> {
-    contour_points: &'a[ContourPoint],
+    table: &'a[TableItem],
     start_index: usize,
     current_index: Option<usize>,
 }
@@ -167,7 +156,7 @@ impl<'a> Iterator for ControlPoints<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_index {
             Some(index) => {
-                let point = &self.contour_points[index];
+                let point = &self.table[index];
                 self.current_index = if point.next != self.start_index {
                     Some(point.next)
                 } else {
