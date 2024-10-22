@@ -2,13 +2,13 @@ use image::{buffer::Pixels, Luma};
 
 pub const END: u32 = u32::MAX;
 
-pub struct RowChanges<'a> {
+pub struct RowChangeIter<'a> {
     row: Option<Pixels<'a, Luma<u8>>>,
     previous: bool,
     x: u32,
 }
 
-impl<'a> RowChanges<'a> {
+impl<'a> RowChangeIter<'a> {
     pub fn empty() -> Self {
         Self { row: None, previous: false, x: 0 }
     }
@@ -18,7 +18,7 @@ impl<'a> RowChanges<'a> {
     }
 }
 
-impl<'a> Iterator for RowChanges<'a> {
+impl<'a> Iterator for RowChangeIter<'a> {
     type Item = u32;
     
     fn next(&mut self) -> Option<Self::Item> {
@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     fn empty() {
-        let actual = RowChanges::empty();
+        let actual = RowChangeIter::empty();
         let expected = vec![END];
         assert!(actual.eq(expected));
     }
@@ -72,7 +72,7 @@ mod tests {
         let width = row_pixels.len() as u32;
         let image = GrayImage::from_vec(width, 1, row_pixels).unwrap();
         let row = image.rows().next().unwrap();
-        let actual = RowChanges::from(row);
+        let actual = RowChangeIter::from(row);
         assert!(actual.eq(expected));
     }
 }

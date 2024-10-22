@@ -31,7 +31,7 @@ impl TableBuilder {
         Self { table: vec![root], current_contour: 0 }
     }
     
-    pub fn add_with_contour(&mut self, x: u32, y: u32) -> usize {
+    pub fn add_with_new_contour(&mut self, x: u32, y: u32) -> usize {
         let index = self.table.len();
         self.table.push(TableItem { x, y, next: 0, relation: Relation::Parent(self.current_contour) });
         index

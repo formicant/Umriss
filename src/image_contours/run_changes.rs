@@ -9,20 +9,20 @@ pub struct RunChange {
     pub x: u32,
 }
 
-pub struct RunChanges<'a> {
+pub struct RunChangeIter<'a> {
     run_top: &'a[u32],
     run_bottom: &'a[u32],
     top_index: usize,
     bottom_index: usize,
 }
 
-impl<'a> RunChanges<'a> {
+impl<'a> RunChangeIter<'a> {
     pub fn new(run_top: &'a[u32], run_bottom: &'a[u32]) -> Self {
         Self { run_top, run_bottom, top_index: 0, bottom_index: 0 }
     }
 }
 
-impl<'a> Iterator for RunChanges<'a> {
+impl<'a> Iterator for RunChangeIter<'a> {
     type Item = RunChange;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -51,26 +51,26 @@ impl<'a> Iterator for RunChanges<'a> {
 #[cfg(test)]
 mod tests {
     use test_case::test_case;
-    use super::{*, RunChangeKind::*};
+    use super::*;
 
     #[test_case(&[END], &[END], vec![])]
-    #[test_case(&[0, END], &[END], vec![RunChange{ kind: Top, x: 0 }])]
-    #[test_case(&[END], &[0, END], vec![RunChange{ kind: Bottom, x: 0 }])]
-    #[test_case(&[0, END], &[0, END], vec![RunChange{ kind: Both, x: 0 }])]
+    #[test_case(&[0, END], &[END], vec![RunChange{ kind: RunChangeKind::Top, x: 0 }])]
+    #[test_case(&[END], &[0, END], vec![RunChange{ kind: RunChangeKind::Bottom, x: 0 }])]
+    #[test_case(&[0, END], &[0, END], vec![RunChange{ kind: RunChangeKind::Both, x: 0 }])]
     #[test_case(
         &[1, 38, 39, 41, END],
         &[1, 2, 39, 42, END],
         vec![
-            RunChange{ kind: Both, x: 1 },
-            RunChange{ kind: Bottom, x: 2 },
-            RunChange{ kind: Top, x: 38 },
-            RunChange{ kind: Both, x: 39 },
-            RunChange{ kind: Top, x: 41 },
-            RunChange{ kind: Bottom, x: 42 },
+            RunChange{ kind: RunChangeKind::Both, x: 1 },
+            RunChange{ kind: RunChangeKind::Bottom, x: 2 },
+            RunChange{ kind: RunChangeKind::Top, x: 38 },
+            RunChange{ kind: RunChangeKind::Both, x: 39 },
+            RunChange{ kind: RunChangeKind::Top, x: 41 },
+            RunChange{ kind: RunChangeKind::Bottom, x: 42 },
         ]
     )]
     fn pixel_row(run_top: &[u32], run_bottom: &[u32], expected: Vec<RunChange>) {
-        let actual = RunChanges::new(run_top, run_bottom);
+        let actual = RunChangeIter::new(run_top, run_bottom);
         assert!(actual.eq(expected));
     }
 }
