@@ -1,23 +1,23 @@
-mod image_contours;
+mod image_contour_collection;
 
 use std::fs;
 use std::error::Error;
 use std::time::Instant;
 use image::ImageReader;
-use image_contours::ImageContours;
+use image_contour_collection::ImageContourCollection;
 
 fn main() -> Result<(), Box<dyn Error>> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
-    let image_file = "img/test.png";
-    // let image_file = "img/bull.png";
+    // let image_file = "img/test.png";
+    let image_file = "img/page-1.png";
     let image = ImageReader::open(image_file)?.decode()?.into_luma8();
-    let contours = ImageContours::new(&image);
+    let contours = ImageContourCollection::new(&image);
     
     let iterations = 250;
     let start = Instant::now();
     for _ in 0..iterations {
-        let cs = ImageContours::new(&image);
+        let cs = ImageContourCollection::new(&image);
         if cs.table.len() != contours.table.len() {
             panic!();
         }
@@ -35,23 +35,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn get_svg(contours: &ImageContours, image_file: &str) -> String {
+fn get_svg(contours: &ImageContourCollection, image_file: &str) -> String {
     let (width, height) = contours.dimensions();
     let mut paths = Vec::new();
     
-    for contour in contours.outermost_contours() {
-        let control_points: Vec<_> = contour.control_points().collect();
+    for contour in contours.all_contours() {
+        let control_points: Vec<_> = contour.even_points().collect();
         let (x0, y0) = control_points[0];
         let mut nodes = vec![format!("M {} {} ", x0, y0)];
         for (x, y) in control_points[1..].iter() {
             nodes.push(format!("H {} V {} ", x, y));
         }
         nodes.push(format!("H {} Z", x0));
-        paths.push(format!(r#"  <path fill="none" stroke="blue" stroke-width="0.1" d="{}" />
+        paths.push(format!(r#"    <path d="{}" />
 "#, nodes.concat()));
     }
     
     return format!(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="{width}" height="{height}">
   <image href="{image_file}" image-rendering="pixelated" opacity="0.25" />
-{}</svg>"#, paths.concat());
+  <g stroke="blue" stroke-width="0.1">
+{}
+  </g>
+</svg>"#, paths.concat());
 }

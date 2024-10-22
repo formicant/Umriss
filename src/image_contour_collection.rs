@@ -9,14 +9,14 @@ use image::GrayImage;
 use row_changes::RowChangeIter;
 use run_changes::RunChangeIter;
 use feature_automaton::{FeatureKind, Feature, FeatureAutomaton};
-use table_builder::{Relation, TableItem, TableBuilder};
-use contours::SiblingContourIter;
+use table_builder::{TableItem, TableBuilder};
+use contours::{ChildContourIter, DescendantContourIter};
 
-pub struct ImageContours {
+pub struct ImageContourCollection {
     pub table: Vec<TableItem>,
 }
 
-impl ImageContours {
+impl ImageContourCollection {
     pub fn new(image: &GrayImage) -> Self {
         let (width, height) = image.dimensions();
         
@@ -87,7 +87,7 @@ impl ImageContours {
         }
         debug_assert!(queue.is_empty());
         
-        ImageContours { table: table_builder.into() }
+        ImageContourCollection { table: table_builder.into() }
     }
     
     pub fn dimensions(&self) -> (u32, u32) {
@@ -95,12 +95,15 @@ impl ImageContours {
         (root.x, root.y)
     }
     
-    pub fn outermost_contours<'a>(&'a self) -> SiblingContourIter<'a> {
-        let root = &self.table[0];
-        if let Relation::Child(first_child) = root.relation {
-            SiblingContourIter::new(&self.table, false, first_child)
-        } else {
-            SiblingContourIter::empty(&self.table)
-        }
+    pub fn outermost_contours<'a>(&'a self) -> ChildContourIter<'a> {
+        ChildContourIter::new(&self.table, 0, true)
+    }
+    
+    pub fn non_hole_contours<'a>(&'a self) -> DescendantContourIter<'a> {
+        DescendantContourIter::new(&self.table, 0, true, Some(false))
+    }
+    
+    pub fn all_contours<'a>(&'a self) -> DescendantContourIter<'a> {
+        DescendantContourIter::new(&self.table, 0, true, None)
     }
 }
