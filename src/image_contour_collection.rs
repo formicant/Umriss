@@ -1,7 +1,7 @@
 mod row_changes;
 mod run_changes;
 mod feature_automaton;
-mod table_builder;
+mod point_list_builder;
 mod contours;
 
 use std::{iter, mem, collections::VecDeque};
@@ -9,11 +9,11 @@ use image::GrayImage;
 use row_changes::RowChangeIter;
 use run_changes::RunChangeIter;
 use feature_automaton::{FeatureKind, Feature, FeatureAutomaton};
-use table_builder::{TableItem, TableBuilder};
-use contours::{ChildContourIter, DescendantContourIter};
+use point_list_builder::{PointListItem, PointListBuilder};
+use contours::{Contour, ChildContourIter, DescendantContourIter};
 
 pub struct ImageContourCollection {
-    pub table: Vec<TableItem>,
+    pub point_list: Vec<PointListItem>,
 }
 
 impl ImageContourCollection {
@@ -21,7 +21,7 @@ impl ImageContourCollection {
         let (width, height) = image.dimensions();
         
         let mut feature_automaton = FeatureAutomaton::new();
-        let mut table_builder = TableBuilder::new(width, height);
+        let mut point_list_builder = PointListBuilder::new(width, height);
         let mut queue = VecDeque::new();
         
         let run_capacity = width as usize + 2;
@@ -43,7 +43,7 @@ impl ImageContourCollection {
                 let Feature { kind, x } = feature_automaton.step(change);
                 match kind {
                     FeatureKind::Head => {
-                        let new_index = table_builder.add_with_new_contour(x, y);
+                        let new_index = point_list_builder.add_with_new_contour(x, y);
                         queue.push_back((new_index, new_index));
                         queue.push_back((new_index, new_index));
                     },
@@ -51,35 +51,35 @@ impl ImageContourCollection {
                         debug_assert!(queue.len() >= 1);
                         let (index, head) = queue.pop_front().unwrap();
                         queue.push_back((index, head));
-                        table_builder.cross_contour(head);
+                        point_list_builder.cross_contour(head);
                     },
                     FeatureKind::LeftShelf => {
                         debug_assert!(queue.len() >= 1);
                         let (to_index, head) = queue.pop_front().unwrap();
-                        let new_index = table_builder.add_with_next(x, y, to_index);
-                        table_builder.cross_contour(head);
+                        let new_index = point_list_builder.add_with_next(x, y, to_index);
+                        point_list_builder.cross_contour(head);
                         queue.push_back((new_index, head));
                     },
                     FeatureKind::RightShelf => {
                         debug_assert!(queue.len() >= 1);
                         let (from_index, head) = queue.pop_front().unwrap();
-                        let new_index = table_builder.add_with_previous(x, y, from_index);
-                        table_builder.cross_contour(head);
+                        let new_index = point_list_builder.add_with_previous(x, y, from_index);
+                        point_list_builder.cross_contour(head);
                         queue.push_back((new_index, head));
                     },
                     FeatureKind::InnerFoot => {
                         debug_assert!(queue.len() >= 2);
                         let (from_index, from_head) = queue.pop_front().unwrap();
                         let (to_index, to_head) = queue.pop_front().unwrap();
-                        table_builder.add_with_next_and_previous(x, y, to_index, from_index);
-                        table_builder.combine_contours(to_head, from_head);
+                        point_list_builder.add_with_next_and_previous(x, y, to_index, from_index);
+                        point_list_builder.combine_contours(to_head, from_head);
                     },
                     FeatureKind::OuterFoot => {
                         debug_assert!(queue.len() >= 2);
                         let (to_index, to_head) = queue.pop_front().unwrap();
                         let (from_index, from_head) = queue.pop_front().unwrap();
-                        table_builder.add_with_next_and_previous(x, y, to_index, from_index);
-                        table_builder.combine_contours(from_head, to_head);
+                        point_list_builder.add_with_next_and_previous(x, y, to_index, from_index);
+                        point_list_builder.combine_contours(from_head, to_head);
                     },
                     FeatureKind::None => { }
                 }
@@ -87,23 +87,24 @@ impl ImageContourCollection {
         }
         debug_assert!(queue.is_empty());
         
-        ImageContourCollection { table: table_builder.into() }
+        ImageContourCollection { point_list: point_list_builder.into() }
     }
     
     pub fn dimensions(&self) -> (u32, u32) {
-        let root = &self.table[0];
+        let root = &self.point_list[0];
         (root.x, root.y)
     }
     
     pub fn outermost_contours<'a>(&'a self) -> ChildContourIter<'a> {
-        ChildContourIter::new(&self.table, 0, true)
+        ChildContourIter::new(&self.point_list, 0, true)
     }
     
-    pub fn non_hole_contours<'a>(&'a self) -> DescendantContourIter<'a> {
-        DescendantContourIter::new(&self.table, 0, true, Some(false))
+    pub fn non_hole_contours<'a>(&'a self) -> impl Iterator<Item = Contour<'a>> {
+        DescendantContourIter::new(&self.point_list, 0, true)
+            .filter(|contour| !contour.is_hole())
     }
     
     pub fn all_contours<'a>(&'a self) -> DescendantContourIter<'a> {
-        DescendantContourIter::new(&self.table, 0, true, None)
+        DescendantContourIter::new(&self.point_list, 0, true)
     }
 }

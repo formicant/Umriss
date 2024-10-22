@@ -9,8 +9,8 @@ use image_contour_collection::ImageContourCollection;
 fn main() -> Result<(), Box<dyn Error>> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
-    // let image_file = "img/test.png";
-    let image_file = "img/page-1.png";
+    let image_file = "img/test.png";
+    // let image_file = "img/page-1.png";
     let image = ImageReader::open(image_file)?.decode()?.into_luma8();
     let contours = ImageContourCollection::new(&image);
     
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     for _ in 0..iterations {
         let cs = ImageContourCollection::new(&image);
-        if cs.table.len() != contours.table.len() {
+        if cs.point_list.len() != contours.point_list.len() {
             panic!();
         }
     }
@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let svg = get_svg(&contours, &image_file.strip_prefix("img/").unwrap());
     fs::write("img/out.svg", svg)?;
     
-    for (i, p) in contours.table.iter().enumerate() {
+    for (i, p) in contours.point_list.iter().enumerate() {
         println!("{i:5}: {p:?}");
     }
     println!("Elapsed: {}", time.as_micros() / iterations);
@@ -39,7 +39,7 @@ fn get_svg(contours: &ImageContourCollection, image_file: &str) -> String {
     let (width, height) = contours.dimensions();
     let mut paths = Vec::new();
     
-    for contour in contours.all_contours() {
+    for contour in contours.non_hole_contours() {
         let control_points: Vec<_> = contour.even_points().collect();
         let (x0, y0) = control_points[0];
         let mut nodes = vec![format!("M {} {} ", x0, y0)];
