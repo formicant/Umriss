@@ -10,12 +10,6 @@ use row_changes::RowChanges;
 use run_changes::RunChanges;
 use feature_automaton::{Feature, FeatureAutomaton, FeatureKind};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct QueueItem {
-    index: usize,
-    head: usize,
-}
-
 pub struct ImageContours {
     pub table: Vec<TableItem>,
 }
@@ -48,40 +42,40 @@ impl ImageContours {
                 match kind {
                     FeatureKind::Head => {
                         let new_index = table_builder.add_with_contour(x, y);
-                        queue.push_front(QueueItem { index: new_index, head: new_index });
-                        queue.push_front(QueueItem { index: new_index, head: new_index });
+                        queue.push_back((new_index, new_index));
+                        queue.push_back((new_index, new_index));
                     },
                     FeatureKind::Vertical => {
                         debug_assert!(queue.len() >= 1);
-                        let QueueItem { index, head } = queue.pop_back().unwrap();
-                        queue.push_front(QueueItem { index, head });
+                        let (index, head) = queue.pop_front().unwrap();
+                        queue.push_back((index, head));
                         table_builder.cross_contour(head);
                     },
                     FeatureKind::LeftShelf => {
                         debug_assert!(queue.len() >= 1);
-                        let QueueItem { index: to_index, head } = queue.pop_back().unwrap();
+                        let (to_index, head) = queue.pop_front().unwrap();
                         let new_index = table_builder.add_with_next(x, y, to_index);
                         table_builder.cross_contour(head);
-                        queue.push_front(QueueItem { index: new_index, head });
+                        queue.push_back((new_index, head));
                     },
                     FeatureKind::RightShelf => {
                         debug_assert!(queue.len() >= 1);
-                        let QueueItem { index: from_index, head } = queue.pop_back().unwrap();
+                        let (from_index, head) = queue.pop_front().unwrap();
                         let new_index = table_builder.add_with_previous(x, y, from_index);
                         table_builder.cross_contour(head);
-                        queue.push_front(QueueItem { index: new_index, head });
+                        queue.push_back((new_index, head));
                     },
                     FeatureKind::InnerFoot => {
                         debug_assert!(queue.len() >= 2);
-                        let QueueItem { index: from_index, head: from_head } = queue.pop_back().unwrap();
-                        let QueueItem { index: to_index, head: to_head } = queue.pop_back().unwrap();
+                        let (from_index, from_head) = queue.pop_front().unwrap();
+                        let (to_index, to_head) = queue.pop_front().unwrap();
                         table_builder.add_with_next_and_previous(x, y, to_index, from_index);
                         table_builder.combine_contours(to_head, from_head);
                     },
                     FeatureKind::OuterFoot => {
                         debug_assert!(queue.len() >= 2);
-                        let QueueItem { index: to_index, head: to_head } = queue.pop_back().unwrap();
-                        let QueueItem { index: from_index, head: from_head } = queue.pop_back().unwrap();
+                        let (to_index, to_head) = queue.pop_front().unwrap();
+                        let (from_index, from_head) = queue.pop_front().unwrap();
                         table_builder.add_with_next_and_previous(x, y, to_index, from_index);
                         table_builder.combine_contours(from_head, to_head);
                     },
