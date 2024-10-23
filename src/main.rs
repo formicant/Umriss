@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
     let image_file = "img/test.png";
-    // let image_file = "img/page-1.png";
+    // let image_file = "img/page.png";
     let image = ImageReader::open(image_file)?.decode()?.into_luma8();
     let contours = ImageContourCollection::new(&image);
     
@@ -52,8 +52,8 @@ fn get_svg(contours: &ImageContourCollection, image_file: &str) -> String {
     }
     
     return format!(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="{width}" height="{height}">
-  <image href="{image_file}" image-rendering="pixelated" opacity="0.25" />
-  <g stroke="blue" stroke-width="0.1">
+  <image href="{image_file}" image-rendering="pixelated" opacity="0" />
+  <g stroke="blue" fill="blue" fill-opacity="0.25" stroke-width="0.1">
 {}
   </g>
 </svg>"#, paths.concat());

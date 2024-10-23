@@ -1,9 +1,12 @@
-use super::point_list_builder::{Relation, PointListItem};
+use std::num::NonZeroUsize;
+use super::hierarchy_builder::HierarchyItem;
+use super::point_list_builder::PointListItem;
 
 pub struct Contour<'a> {
+    hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
     is_hole: bool,
-    start_index: usize,
+    index: NonZeroUsize,
 }
 
 impl<'a> Contour<'a> {
@@ -12,7 +15,8 @@ impl<'a> Contour<'a> {
     }
     
     pub fn even_points(&self) -> EvenPointIter<'a> {
-        EvenPointIter { point_list: self.point_list, start_index: self.start_index, current_index: Some(self.start_index) }
+        let start_index = self.hierarchy[self.index.get()].head_point;
+        EvenPointIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
     }
 }
 
@@ -39,18 +43,17 @@ impl<'a> Iterator for EvenPointIter<'a> {
 }
 
 pub struct ChildContourIter<'a> {
+    hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
     is_hole: bool,
-    current_index: Option<usize>,
+    current_index: Option<NonZeroUsize>,
 }
 
 impl<'a> ChildContourIter<'a> {
-    pub fn new(point_list: &'a[PointListItem], parent_index: usize, is_parent_hole: bool) -> Self {
+    pub fn new(hierarchy: &'a[HierarchyItem], point_list: &'a[PointListItem], parent_index: usize, is_parent_hole: bool) -> Self {
         let is_hole = !is_parent_hole;
-        match point_list[parent_index].relation {
-            Relation::Child(child) => Self { point_list, is_hole, current_index: Some(child) },
-            _ => Self { point_list, is_hole, current_index: None }
-        }
+        let current_index = hierarchy[parent_index].first_child;
+        Self { hierarchy, point_list, is_hole, current_index }
     }
 }
 
@@ -58,30 +61,26 @@ impl<'a> Iterator for ChildContourIter<'a> {
     type Item = Contour<'a>;
     
     fn next(&mut self) -> Option<Self::Item> {
-        self.current_index.map(|start_index| {
-            let head = &self.point_list[start_index];
-            let next = &self.point_list[head.next];
-            self.current_index = match next.relation {
-                Relation::Sibling(sibling) => Some(sibling),
-                _ => None,
-            };
-            Contour { point_list: self.point_list, is_hole: self.is_hole, start_index }
+        self.current_index.map(|index| {
+            let current = &self.hierarchy[index.get()];
+            self.current_index = current.next_sibling;
+            Contour { hierarchy: self.hierarchy, point_list: self.point_list, is_hole: self.is_hole, index }
         })
     }
 }
 
 pub struct DescendantContourIter<'a> {
+    hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
-    is_root_hole: bool,
-    stack: Vec<usize>,
+    is_hole: bool,
+    current_index: Option<NonZeroUsize>,
 }
 
 impl<'a> DescendantContourIter<'a> {
-    pub fn new(point_list: &'a[PointListItem], root_index: usize, is_root_hole: bool) -> Self {
-        match point_list[root_index].relation {
-            Relation::Child(child) => Self { point_list, is_root_hole, stack: vec![child] },
-            _ => Self { point_list, is_root_hole, stack: Vec::new() }
-        }
+    pub fn new(hierarchy: &'a[HierarchyItem], point_list: &'a[PointListItem], root_index: usize, is_root_hole: bool) -> Self {
+        let is_hole = !is_root_hole;
+        let current_index = hierarchy[root_index].first_child;
+        Self { hierarchy, point_list, is_hole, current_index }
     }
 }
 
@@ -89,17 +88,19 @@ impl<'a> Iterator for DescendantContourIter<'a> {
     type Item = Contour<'a>;
     
     fn next(&mut self) -> Option<Self::Item> {
-        self.stack.pop().map(|start_index| {
-            let is_hole = self.is_root_hole ^ (self.stack.len() % 2 == 0);
-            let head = &self.point_list[start_index];
-            let next = &self.point_list[head.next];
-            if let Relation::Sibling(sibling) = next.relation {
-                self.stack.push(sibling);
+        self.current_index.map(|index| {
+            let is_hole = self.is_hole;
+            let current = &self.hierarchy[index.get()];
+            if let Some(child) = current.first_child {
+                self.current_index = Some(child);
+                self.is_hole = !self.is_hole;
+            } else if let Some(sibling) = current.next_sibling {
+                self.current_index = Some(sibling);
+            } else {
+                self.current_index = self.hierarchy[current.parent].next_sibling;
+                self.is_hole = !self.is_hole;
             }
-            if let Relation::Child(child) = head.relation {
-                self.stack.push(child);
-            }
-            Contour { point_list: self.point_list, is_hole, start_index }
+            Contour { hierarchy: self.hierarchy, point_list: self.point_list, is_hole, index }
         })
     }
 }
