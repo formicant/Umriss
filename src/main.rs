@@ -9,15 +9,16 @@ use image_contour_collection::ImageContourCollection;
 fn main() -> Result<(), Box<dyn Error>> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
+    let image_file = "img/art_50x50.png";
     // let image_file = "img/test.png";
-    let image_file = "img/page.png";
+    // let image_file = "img/page.png";
     let image = ImageReader::open(image_file)?.decode()?.into_luma8();
-    let contours = ImageContourCollection::new(&image);
+    let contours = ImageContourCollection::new(&image, true);
     
     let iterations = 250;
     let start = Instant::now();
     for _ in 0..iterations {
-        let cs = ImageContourCollection::new(&image);
+        let cs = ImageContourCollection::new(&image, true);
         if cs.point_list.len() != contours.point_list.len() {
             panic!();
         }

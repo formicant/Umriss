@@ -23,7 +23,15 @@ pub struct ImageContourCollection {
 }
 
 impl ImageContourCollection {
-    pub fn new(image: &GrayImage) -> Self {
+    pub fn white_on_black(image: &GrayImage) -> Self {
+        Self::new(image, false)
+    }
+    
+    pub fn black_on_white(image: &GrayImage) -> Self {
+        Self::new(image, true)
+    }
+    
+    pub fn new(image: &GrayImage, inverted: bool) -> Self {
         let (width, height) = image.dimensions();
         
         let mut feature_automaton = FeatureAutomaton::new();
@@ -37,7 +45,7 @@ impl ImageContourCollection {
         run_bottom.extend(RowChangeIter::empty());
         
         let rows = image.rows()
-            .map(RowChangeIter::from)
+            .map(|row| RowChangeIter::from(row, inverted))
             .chain(iter::once(RowChangeIter::empty()));
         
         for (row_index, row_changes) in rows.enumerate() {

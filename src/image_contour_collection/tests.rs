@@ -33,12 +33,12 @@ use super::*;
         hier(4, 0, NonZeroUsize::new(1), None),
     ]
 )]
-fn pixel_row(
+fn small_test_images(
     width: u32, height: u32, image_pixels: Vec<u8>,
     expected_point_list: Vec<PointListItem>, expected_hierarchy: Vec<HierarchyItem>
 ) {
     let image = GrayImage::from_vec(width, height, image_pixels).unwrap();
-    let actual = ImageContourCollection::new(&image);
+    let actual = ImageContourCollection::new(&image, false);
     assert_eq!(actual.dimensions(), (width, height));
     assert_eq!(actual.point_list, expected_point_list);
     assert_eq!(actual.hierarchy, expected_hierarchy);
