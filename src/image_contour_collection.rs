@@ -116,4 +116,3 @@ impl ImageContourCollection {
         DescendantContourIter::new(&self.hierarchy, &self.point_list, 0, true)
     }
 }
-

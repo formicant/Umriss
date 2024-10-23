@@ -72,6 +72,7 @@ impl<'a> Iterator for ChildContourIter<'a> {
 pub struct DescendantContourIter<'a> {
     hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
+    root_index: usize,
     is_hole: bool,
     current_index: Option<NonZeroUsize>,
 }
@@ -80,7 +81,7 @@ impl<'a> DescendantContourIter<'a> {
     pub fn new(hierarchy: &'a[HierarchyItem], point_list: &'a[PointListItem], root_index: usize, is_root_hole: bool) -> Self {
         let is_hole = !is_root_hole;
         let current_index = hierarchy[root_index].first_child;
-        Self { hierarchy, point_list, is_hole, current_index }
+        Self { hierarchy, point_list, root_index, is_hole, current_index }
     }
 }
 
@@ -90,15 +91,23 @@ impl<'a> Iterator for DescendantContourIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.current_index.map(|index| {
             let is_hole = self.is_hole;
-            let current = &self.hierarchy[index.get()];
+            let mut current = &self.hierarchy[index.get()];
             if let Some(child) = current.first_child {
                 self.current_index = Some(child);
                 self.is_hole = !self.is_hole;
-            } else if let Some(sibling) = current.next_sibling {
-                self.current_index = Some(sibling);
             } else {
-                self.current_index = self.hierarchy[current.parent].next_sibling;
-                self.is_hole = !self.is_hole;
+                loop {
+                    if let Some(sibling) = current.next_sibling {
+                        self.current_index = Some(sibling);
+                        break;
+                    } else if current.parent != self.root_index {
+                        current = &self.hierarchy[current.parent];
+                        self.is_hole = !self.is_hole;
+                    } else {
+                        self.current_index = None;
+                        break;
+                    }
+                }
             }
             Contour { hierarchy: self.hierarchy, point_list: self.point_list, is_hole, index }
         })
