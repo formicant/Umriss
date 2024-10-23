@@ -27,6 +27,14 @@ impl<'a> Contour<'a> {
     pub fn all_descendants(&self) -> DescendantContourIter<'a> {
         DescendantContourIter::new(self.hierarchy, self.point_list, self.index.get(), self.is_hole)
     }
+    
+    pub fn parent(&self) -> Option<Self> {
+        let parent_index = self.hierarchy[self.index.get()].parent;
+        NonZeroUsize::new(parent_index).map(|index| {
+            let is_hole = !self.is_hole;
+            Self { hierarchy: self.hierarchy, point_list: self.point_list, is_hole, index }
+        })
+    }
 }
 
 pub struct EvenPointIter<'a> {

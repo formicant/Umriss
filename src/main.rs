@@ -9,8 +9,8 @@ use image_contour_collection::ImageContourCollection;
 fn main() -> Result<(), Box<dyn Error>> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
-    let image_file = "img/test.png";
-    // let image_file = "img/page.png";
+    // let image_file = "img/test.png";
+    let image_file = "img/page.png";
     let image = ImageReader::open(image_file)?.decode()?.into_luma8();
     let contours = ImageContourCollection::new(&image);
     
