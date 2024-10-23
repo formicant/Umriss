@@ -39,7 +39,7 @@ fn get_svg(contours: &ImageContourCollection, image_file: &str) -> String {
     let (width, height) = contours.dimensions();
     let mut paths = Vec::new();
     
-    for contour in contours.non_hole_contours() {
+    for contour in contours.all_contours() {
         let control_points: Vec<_> = contour.even_points().collect();
         let (x0, y0) = control_points[0];
         let mut nodes = vec![format!("M {} {} ", x0, y0)];
