@@ -2,6 +2,7 @@ use std::num::NonZeroUsize;
 use super::hierarchy_builder::HierarchyItem;
 use super::point_list_builder::PointListItem;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Contour<'a> {
     hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
@@ -17,6 +18,14 @@ impl<'a> Contour<'a> {
     pub fn even_points(&self) -> EvenPointIter<'a> {
         let start_index = self.hierarchy[self.index.get()].head_point;
         EvenPointIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
+    }
+    
+    pub fn children(&self) -> ChildContourIter<'a> {
+        ChildContourIter::new(self.hierarchy, self.point_list, self.index.get(), self.is_hole)
+    }
+    
+    pub fn all_descendants(&self) -> DescendantContourIter<'a> {
+        DescendantContourIter::new(self.hierarchy, self.point_list, self.index.get(), self.is_hole)
     }
 }
 
