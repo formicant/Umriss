@@ -1,5 +1,6 @@
 use std::num::NonZeroUsize;
 use test_case::test_case;
+use crate::test_images::get_test_images;
 use super::*;
 
 #[test_case(
@@ -42,6 +43,23 @@ fn small_test_images(
     assert_eq!(actual.dimensions(), (width, height));
     assert_eq!(actual.point_list, expected_point_list);
     assert_eq!(actual.hierarchy, expected_hierarchy);
+}
+
+#[test]
+fn point_list_consistency() {
+    test_all_images(|name, contour_collection| {
+        let list = contour_collection.point_list;
+        assert!(list.len() >= 2, "Image: '{}'", name);
+    })
+}
+
+fn test_all_images(test: impl Fn(&str, ImageContourCollection)) {
+    for (name, image) in get_test_images() {
+        for &inverted in [false, true].iter() {
+            let contour_collection = ImageContourCollection::new(&image, inverted);
+            test(&name, contour_collection);
+        }
+    }
 }
 
 const fn root(first_child: Option<NonZeroUsize>) -> HierarchyItem {
