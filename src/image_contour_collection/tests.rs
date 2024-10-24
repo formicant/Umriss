@@ -46,18 +46,47 @@ fn small_test_images(
 }
 
 #[test]
-fn point_list_consistency() {
-    test_all_images(|name, contour_collection| {
-        let list = contour_collection.point_list;
-        assert!(list.len() >= 2, "Image: '{}'", name);
+fn hierarchy_consistency() {
+    test_all_images(|testcase, contour_collection| {
+        let h = contour_collection.hierarchy;
+        let mut is_visited = vec![false; h.len()];
+        
+        let mut stack = vec![0];
+        while let Some(index) = stack.pop() {
+            is_visited[index] = true;
+            let current = &h[index];
+            
+            if let Some(child) = current.first_child {
+                assert!(!is_visited[child.get()],
+                    "{testcase}: cycle in hierarchy tree (item {child})");
+                assert_eq!(h[child.get()].parent, index,
+                    "{testcase}: hierarchy item {child} has incorrect parent");
+                stack.push(child.get());
+            }
+            if let Some(sibling) = current.next_sibling {
+                assert!(!is_visited[sibling.get()],
+                    "{testcase}: cycle in hierarchy tree (item {sibling})");
+                assert_eq!(h[sibling.get()].parent, current.parent,
+                    "{testcase}: hierarchy item {sibling} has incorrect parent");
+                stack.push(sibling.get());
+            }
+        }
+        
+        assert!(is_visited.iter().all(|&v| v),
+            "{testcase}: not all hierarchy items accessible");
     })
 }
 
-fn test_all_images(test: impl Fn(&str, ImageContourCollection)) {
+fn test_all_images(test: impl Fn(String, ImageContourCollection)) {
     for (name, image) in get_test_images() {
         for &inverted in [false, true].iter() {
             let contour_collection = ImageContourCollection::new(&image, inverted);
-            test(&name, contour_collection);
+            let testcase = if inverted {
+                format!("Image: '{name}', inverted")
+            } else {
+                format!("Image: '{name}'")
+            };
+            test(testcase, contour_collection);
         }
     }
 }

@@ -1,7 +1,5 @@
 mod image_contour_collection;
 mod test_images;
-mod page;
-mod glyph;
 mod silly_svg;
 
 use std::fs;
