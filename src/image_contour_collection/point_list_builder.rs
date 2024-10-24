@@ -1,10 +1,11 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PointListItem {
     pub x: u32,
     pub y: u32,
     pub next: usize,
 }
 
+#[derive(Debug)]
 pub struct PointListBuilder {
     point_list: Vec<PointListItem>,
 }

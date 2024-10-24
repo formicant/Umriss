@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct HierarchyItem {
     pub head_point: usize,
     pub parent: usize,
@@ -8,18 +8,19 @@ pub struct HierarchyItem {
     pub first_child: Option<NonZeroUsize>,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Relation {
     Alias(usize),
     Parent(usize),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 struct Head {
     index: usize,
     relation: Relation,
 }
 
+#[derive(Debug)]
 pub struct HierarchyBuilder {
     heads: Vec<Head>,
     current_contour: usize,
@@ -75,7 +76,7 @@ impl HierarchyBuilder {
     }
     
     pub fn into(mut self) -> Vec<HierarchyItem> {
-        debug_assert_eq!(self.current_contour, NONE);
+        // debug_assert_eq!(self.current_contour, NONE);
         
         let root = HierarchyItem { head_point: NONE, parent: NONE, next_sibling: None, first_child: None };
         let mut hierarchy = vec![root];

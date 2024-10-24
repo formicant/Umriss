@@ -13,7 +13,8 @@ use row_changes::RowChangeIter;
 use run_changes::RunChangeIter;
 use feature_automaton::{FeatureKind, Feature, FeatureAutomaton};
 use point_list_builder::{PointListItem, PointListBuilder};
-use contours::{Contour, ChildContourIter, DescendantContourIter};
+use contours::{ChildContourIter, DescendantContourIter};
+pub use contours::Contour;
 
 pub struct ImageContourCollection {
     width: u32,

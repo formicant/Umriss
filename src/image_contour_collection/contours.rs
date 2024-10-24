@@ -2,7 +2,7 @@ use std::num::NonZeroUsize;
 use super::hierarchy_builder::HierarchyItem;
 use super::point_list_builder::PointListItem;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct Contour<'a> {
     hierarchy: &'a[HierarchyItem],
     point_list: &'a[PointListItem],
