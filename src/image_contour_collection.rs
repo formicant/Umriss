@@ -102,7 +102,7 @@ impl ImageContourCollection {
                 }
             }
         }
-        debug_assert!(queue.is_empty());
+        assert!(queue.is_empty(), "Queue left non-empty");
         
         let point_list = point_list_builder.into();
         let hierarchy = hierarchy_builder.into();

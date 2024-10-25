@@ -76,7 +76,7 @@ impl HierarchyBuilder {
     }
     
     pub fn into(mut self) -> Vec<HierarchyItem> {
-        // debug_assert_eq!(self.current_contour, NONE);
+        assert_eq!(self.current_contour, NONE, "Some contours left unclosed");
         
         let root = HierarchyItem { head_point: NONE, parent: NONE, next_sibling: None, first_child: None };
         let mut hierarchy = vec![root];
