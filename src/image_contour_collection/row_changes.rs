@@ -1,7 +1,24 @@
 use image::{buffer::Pixels, Luma};
 
+/// Marks the end of changes iteration.
+/// Is greater then any coordinate.
 pub const END: u32 = u32::MAX;
 
+/// Iterates x coordinates in the row of pixels where changes occur, left to right.
+/// 
+/// A _change_ is when the value of the pixel differs from the value of its neighbor.
+/// The edge pixels that have no neighbors are compared to `edge_value` instead.
+/// 
+/// Binary pixel values assumed — all non-zero `Luma<u8>` values are considered the same.
+/// 
+/// Coordinates correspond to positions between the pixels:
+/// - coordinate 0 is to the left the 0th pixel,
+/// - coordinate 1 is to the right of the 0th and to the left of the 1st pixel,
+/// - . . .
+/// - coordinate `width` is to the right of the last pixel of the row.
+/// 
+/// When there’s no more changes, the iterator returns the `END` mark.
+/// It is greater than any coordinate for the convenience of comparison.
 pub struct RowChangeIter<'a> {
     row: Option<Pixels<'a, Luma<u8>>>,
     edge_value: bool,
@@ -10,10 +27,12 @@ pub struct RowChangeIter<'a> {
 }
 
 impl<'a> RowChangeIter<'a> {
+    /// A row with no changes. Used as a padding row.
     pub fn empty() -> Self {
         Self { row: None, edge_value: false, previous: false, x: 0 }
     }
     
+    /// Consumes a row of pixels and returns an iterator over its changes.
     pub fn from(row: Pixels<'a, Luma<u8>>, edge_value: bool) -> Self {
         Self { row: Some(row), edge_value, previous: edge_value, x: 0 }
     }
@@ -24,12 +43,13 @@ impl<'a> Iterator for RowChangeIter<'a> {
     
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(row) = &mut self.row {
+            // performance-critical
             while let Some(pixel) = row.next() {
                 let x = self.x;
-                self.x += 1;
                 let value = pixel[0] != 0;
                 let differs = value != self.previous;
                 self.previous = value;
+                self.x += 1;
                 if differs {
                     return Some(x);
                 }

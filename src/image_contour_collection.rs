@@ -1,5 +1,5 @@
 mod row_changes;
-mod run_changes;
+mod row_pair_changes;
 mod feature_automaton;
 mod point_list_builder;
 mod hierarchy_builder;
@@ -10,7 +10,7 @@ use std::{iter, mem, collections::VecDeque};
 use hierarchy_builder::{HierarchyBuilder, HierarchyItem};
 use image::GrayImage;
 use row_changes::RowChangeIter;
-use run_changes::RunChangeIter;
+use row_pair_changes::RowPairChangeIter;
 use feature_automaton::{FeatureKind, Feature, FeatureAutomaton};
 use point_list_builder::{PointListItem, PointListBuilder};
 use contours::{ChildContourIter, DescendantContourIter};
@@ -40,22 +40,22 @@ impl ImageContourCollection {
         let mut hierarchy_builder = HierarchyBuilder::new();
         let mut queue = VecDeque::new();
         
-        let run_capacity = width as usize + 2;
-        let mut run_top = Vec::with_capacity(run_capacity);
-        let mut run_bottom = Vec::with_capacity(run_capacity);
-        run_bottom.extend(RowChangeIter::empty());
+        let capacity = width as usize + 2;
+        let mut top_changes = Vec::with_capacity(capacity);
+        let mut bottom_changes = Vec::with_capacity(capacity);
+        bottom_changes.extend(RowChangeIter::empty());
         
         let rows = image.rows()
             .map(|row| RowChangeIter::from(row, inverted))
             .chain(iter::once(RowChangeIter::empty()));
         
         for (row_index, row_changes) in rows.enumerate() {
-            mem::swap(&mut run_top, &mut run_bottom);
-            run_bottom.clear();
-            run_bottom.extend(row_changes);
-
+            mem::swap(&mut top_changes, &mut bottom_changes);
+            bottom_changes.clear();
+            bottom_changes.extend(row_changes);
+            
             let y = row_index as u32;
-            for change in RunChangeIter::new(&run_top, &run_bottom) {
+            for change in RowPairChangeIter::new(&top_changes, &bottom_changes) {
                 let Feature { kind, x } = feature_automaton.step(change);
                 match kind {
                     FeatureKind::Head => {
