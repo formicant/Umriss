@@ -50,7 +50,7 @@ impl HierarchyBuilder {
         }
     }
     
-    pub fn combine_contours(&mut self, from_contour: usize, to_contour: usize) {
+    pub fn merge_contours(&mut self, from_contour: usize, to_contour: usize) {
         let mut from_index = self.unalias(from_contour);
         let mut to_index = self.unalias(to_contour);
         if from_index != to_index {

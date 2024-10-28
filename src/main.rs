@@ -14,7 +14,7 @@ fn main() -> Result<(), Error> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
     process_test_images();
-    // measure_performance("text_5012x7060_math", true, 100);
+    measure_performance("text_5012x7060_math", true, 100);
     
     Ok(())
 }

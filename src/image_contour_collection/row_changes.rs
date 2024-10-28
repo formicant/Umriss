@@ -1,23 +1,23 @@
 use image::{buffer::Pixels, Luma};
 
 /// Marks the end of changes iteration.
-/// Is greater then any coordinate.
+/// Is greater than any coordinate.
 pub const END: u32 = u32::MAX;
 
-/// Iterates x coordinates in the row of pixels where changes occur, left to right.
+/// Iterates x coordinates in the row of pixels where changes occur, from left to right.
 /// 
-/// A _change_ is when the value of the pixel differs from the value of its neighbor.
+/// A _change_ occurs when the value of the pixel differs from the value of its neighbor.
 /// The edge pixels that have no neighbors are compared to `edge_value` instead.
 /// 
 /// Binary pixel values assumed — all non-zero `Luma<u8>` values are considered the same.
 /// 
 /// Coordinates correspond to positions between the pixels:
-/// - coordinate 0 is to the left the 0th pixel,
+/// - coordinate 0 is to the left of the 0th pixel,
 /// - coordinate 1 is to the right of the 0th and to the left of the 1st pixel,
 /// - . . .
 /// - coordinate `width` is to the right of the last pixel of the row.
 /// 
-/// When there’s no more changes, the iterator returns the `END` mark.
+/// When there are no more changes, the iterator returns the `END` marker.
 /// It is greater than any coordinate for the convenience of comparison.
 pub struct RowChangeIter<'a> {
     row: Option<Pixels<'a, Luma<u8>>>,

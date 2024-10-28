@@ -1,8 +1,8 @@
 use super::row_changes::END;
 
-/// Which row of the pair a change occurred at.
+/// In which row of the pair a change has occurred.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RowPairChangeKind { Top, Both, Bottom }
+pub enum RowPairChangeKind { Top, Bottom, Both }
 
 /// Kind and x coordinate of a row pair change.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,7 +12,7 @@ pub struct RowPairChange {
 }
 
 /// Iterates changes in either of the two adjacent image rows,
-/// left to right.
+/// from left to right.
 pub struct RowPairChangeIter<'a> {
     top_changes: &'a[u32],
     bottom_changes: &'a[u32],
