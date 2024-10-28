@@ -67,7 +67,7 @@ fn small_test_images(
     let actual = ImageContourCollection::new(&image, false);
     assert_eq!(actual.dimensions(), (width, height));
     assert_eq!(actual.point_list, expected_point_list);
-    // assert_eq!(actual.hierarchy, expected_hierarchy);
+    assert_eq!(actual.hierarchy, expected_hierarchy);
 }
 
 #[test]
