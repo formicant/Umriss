@@ -29,9 +29,9 @@ use super::*;
         PointListItem { x: 3, y: 4, next: 4 },
     ],
     vec![
-        root(NonZeroUsize::new(2)),
-        hier(0, 0, None, None),
-        hier(4, 0, NonZeroUsize::new(1), None),
+        root(NonZeroUsize::new(1)),
+        hier(0, 0, NonZeroUsize::new(2), None),
+        hier(4, 0, None, None),
     ]
 )]
 #[test_case(
@@ -50,9 +50,9 @@ use super::*;
         PointListItem { x: 5, y: 4, next: 1 },
     ],
     vec![
-        root(NonZeroUsize::new(2)),
-        hier(0, 0, None, None),
-        hier(2, 0, NonZeroUsize::new(1), None),
+        root(NonZeroUsize::new(1)),
+        hier(0, 0, NonZeroUsize::new(2), None),
+        hier(2, 0, None, None),
     ]
 )]
 #[test_case(
@@ -74,9 +74,9 @@ use super::*;
         PointListItem { x: 7, y: 5, next: 1 },
     ],
     vec![
-        root(NonZeroUsize::new(2)),
-        hier(0, 0, None, None),
-        hier(2, 0, NonZeroUsize::new(1), NonZeroUsize::new(3)),
+        root(NonZeroUsize::new(1)),
+        hier(0, 0, NonZeroUsize::new(2), None),
+        hier(2, 0, None, NonZeroUsize::new(3)),
         hier(3, 2, None, None),
     ]
 )]
@@ -138,9 +138,9 @@ fn test_all_images(test: impl Fn(String, ImageContourCollection)) {
 }
 
 const fn root(first_child: Option<NonZeroUsize>) -> HierarchyItem {
-    HierarchyItem { head_point: hierarchy_builder::NONE, parent: hierarchy_builder::NONE, next_sibling: None, first_child }
+    HierarchyItem { head_point_index: 0, parent: 0, next_sibling: None, first_child }
 }
 
 const fn hier(head_point: usize, parent: usize, next_sibling: Option<NonZeroUsize>, first_child: Option<NonZeroUsize>) -> HierarchyItem {
-    HierarchyItem { head_point, parent, next_sibling, first_child }
+    HierarchyItem { head_point_index: head_point, parent, next_sibling, first_child }
 }

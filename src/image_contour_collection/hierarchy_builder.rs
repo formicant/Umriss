@@ -1,25 +1,19 @@
 use std::num::NonZeroUsize;
-use std::cmp::{min, max};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct HierarchyItem {
-    pub head_point: usize,
+    pub head_point_index: usize,
     pub parent: usize,
     pub next_sibling: Option<NonZeroUsize>,
     pub first_child: Option<NonZeroUsize>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Relation {
-    None,
-    Alias(usize),
-    Parent(usize),
-}
-
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Head {
-    index: usize,
-    relation: Relation,
+    point_index: usize,
+    is_alias: bool,
+    parent_contour: usize,
+    hierarchy_index: usize,
 }
 
 #[derive(Debug)]
@@ -30,15 +24,15 @@ pub struct HierarchyBuilder {
 
 impl HierarchyBuilder {
     pub fn new() -> Self {
-        let root = Head { index: 0, relation: Relation::None };
+        let root = Default::default();
         Self { heads: vec![root], contour_to_the_left: 0 }
     }
     
-    pub fn add_contour(&mut self, head_index: usize) -> (usize, usize) {
+    pub fn add_contour(&mut self, point_index: usize) -> (usize, usize) {
+        let parent_contour = self.contour_to_the_left;
         let new_contour = self.heads.len();
-        self.heads.push(Head { index: head_index, relation: Relation::Parent(self.contour_to_the_left) });
-        let contour_to_the_right = self.contour_to_the_left;
-        (new_contour, contour_to_the_right)
+        self.heads.push(Head { point_index, parent_contour, ..Default::default() });
+        (new_contour, parent_contour)
     }
     
     pub fn cross_contour(&mut self, contour_to_the_right: usize) {
@@ -50,29 +44,31 @@ impl HierarchyBuilder {
         let right = self.unalias(contour_to_the_right);
         
         if left != right {
-            let from = max(left, right);
-            let to = min(left, right);
-            self.heads[from].relation = Relation::Alias(to);
+            let (from, to) = if left < right { (right, left) } else { (left, right) };
+            let alias = &mut self.heads[from];
+            alias.is_alias = true;
+            alias.parent_contour = to;
         }
     }
     
     pub fn into(mut self) -> Vec<HierarchyItem> {
         assert_eq!(self.unalias(self.contour_to_the_left), 0, "Some contours left unclosed");
         
-        let root = HierarchyItem { head_point: NONE, parent: NONE, next_sibling: None, first_child: None };
-        let mut hierarchy = vec![root];
+        let mut hierarchy = Vec::new();
+        for head in self.heads.iter_mut().filter(|h| !h.is_alias) {
+            head.hierarchy_index = hierarchy.len();
+            hierarchy.push(HierarchyItem { head_point_index: head.point_index, ..Default::default() });
+        }
         
-        for head in 1..self.heads.len() {
-            let Head { index: head_point, relation } = self.heads[head];
-            if let Relation::Parent(parent_alias) = relation {
-                let new_item = hierarchy.len();
-                self.heads[head].index = new_item;
+        for index in (1..self.heads.len()).rev() {
+            let head = &self.heads[index];
+            if !head.is_alias {
+                let current = head.hierarchy_index;
+                let parent = self.heads[self.unalias(head.parent_contour)].hierarchy_index;
                 
-                let parent = self.heads[self.unalias(parent_alias)].index;
-                let next_sibling = hierarchy[parent].first_child;
-                hierarchy[parent].first_child = NonZeroUsize::new(new_item);
-                
-                hierarchy.push(HierarchyItem { head_point, parent, next_sibling, first_child: None });
+                hierarchy[current].parent = parent;
+                hierarchy[current].next_sibling = hierarchy[parent].first_child;
+                hierarchy[parent].first_child = NonZeroUsize::new(current);
             }
         }
         hierarchy
@@ -80,11 +76,9 @@ impl HierarchyBuilder {
      
     fn unalias(&self, alias: usize) -> usize {
         let mut index = alias;
-        while let Relation::Alias(head) = self.heads[index].relation {
-            index = head;
+        while let Head { point_index: _, is_alias: true, parent_contour, hierarchy_index: _ } = self.heads[index] {
+            index = parent_contour;
         }
         index
     }
 }
-
-pub const NONE: usize = usize::MAX;
