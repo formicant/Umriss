@@ -46,12 +46,12 @@ impl HierarchyBuilder {
     }
     
     pub fn merge_contours(&mut self, contour_to_the_right: usize) {
-        let to_the_left = self.unalias(self.contour_to_the_left);
-        let to_the_right = self.unalias(contour_to_the_right);
+        let left = self.unalias(self.contour_to_the_left);
+        let right = self.unalias(contour_to_the_right);
         
-        if to_the_left != to_the_right {
-            let from = max(to_the_left, to_the_right);
-            let to = min(to_the_left, to_the_right);
+        if left != right {
+            let from = max(left, right);
+            let to = min(left, right);
             self.heads[from].relation = Relation::Alias(to);
         }
     }
