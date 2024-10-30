@@ -55,31 +55,31 @@ use super::*;
         hier(2, 0, NonZeroUsize::new(1), None),
     ]
 )]
-// #[test_case(
-//     7, 5, vec![
-//         1, 1, 1, 1, 1, 1, 1,
-//         1, 0, 0, 0, 0, 0, 1,
-//         1, 0, 1, 1, 1, 0, 1,
-//         1, 0, 1, 0, 1, 0, 1,
-//         1, 0, 1, 1, 1, 0, 1,
-//     ],
-//     vec![
-//         PointListItem { x: 0, y: 0, next: 7 },
-//         PointListItem { x: 6, y: 1, next: 5 },
-//         PointListItem { x: 2, y: 2, next: 6 },
-//         PointListItem { x: 4, y: 3, next: 4 },
-//         PointListItem { x: 3, y: 4, next: 3 },
-//         PointListItem { x: 1, y: 5, next: 0 },
-//         PointListItem { x: 5, y: 5, next: 2 },
-//         PointListItem { x: 7, y: 5, next: 1 },
-//     ],
-//     vec![
-//         root(NonZeroUsize::new(2)),
-//         hier(0, 0, None, None),
-//         hier(2, 0, NonZeroUsize::new(1), NonZeroUsize::new(3)),
-//         hier(3, 2, None, None),
-//     ]
-// )]
+#[test_case(
+    7, 5, vec![
+        1, 1, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 0, 0, 1,
+        1, 0, 1, 1, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 1, 1, 0, 1,
+    ],
+    vec![
+        PointListItem { x: 0, y: 0, next: 7 },
+        PointListItem { x: 6, y: 1, next: 5 },
+        PointListItem { x: 2, y: 2, next: 6 },
+        PointListItem { x: 4, y: 3, next: 4 },
+        PointListItem { x: 3, y: 4, next: 3 },
+        PointListItem { x: 1, y: 5, next: 0 },
+        PointListItem { x: 5, y: 5, next: 2 },
+        PointListItem { x: 7, y: 5, next: 1 },
+    ],
+    vec![
+        root(NonZeroUsize::new(2)),
+        hier(0, 0, None, None),
+        hier(2, 0, NonZeroUsize::new(1), NonZeroUsize::new(3)),
+        hier(3, 2, None, None),
+    ]
+)]
 fn small_test_images(
     width: u32, height: u32, image_pixels: Vec<u8>,
     expected_point_list: Vec<PointListItem>, expected_hierarchy: Vec<HierarchyItem>
