@@ -42,7 +42,7 @@ impl HierarchyBuilder {
     }
     
     pub fn cross_contour(&mut self, contour_to_the_right: usize) {
-        self.contour_to_the_left = self.unalias(contour_to_the_right);
+        self.contour_to_the_left = contour_to_the_right;
     }
     
     pub fn merge_contours(&mut self, contour_to_the_right: usize) {
