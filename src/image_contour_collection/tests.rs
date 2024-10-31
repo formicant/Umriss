@@ -22,17 +22,17 @@ use super::*;
         0, 0, 1,
     ],
     vec![
-        PointListItem { x: 0, y: 0, next: 2 },
-        PointListItem { x: 2, y: 1, next: 3 },
-        PointListItem { x: 3, y: 2, next: 1 },
-        PointListItem { x: 1, y: 3, next: 0 },
-        PointListItem { x: 2, y: 3, next: 5 },
-        PointListItem { x: 3, y: 4, next: 4 },
+        /* 0 */ PointListItem { x: 0, y: 0, next: 2 },
+        /* 1 */ PointListItem { x: 2, y: 1, next: 3 },
+        /* 2 */ PointListItem { x: 3, y: 2, next: 1 },
+        /* 3 */ PointListItem { x: 1, y: 3, next: 0 },
+        /* 4 */ PointListItem { x: 2, y: 3, next: 5 },
+        /* 5 */ PointListItem { x: 3, y: 4, next: 4 },
     ],
     vec![
-        root(NonZeroUsize::new(1)),
-        hier(0, 0, NonZeroUsize::new(2), None),
-        hier(4, 0, None, None),
+        /* 0 */ root(NonZeroUsize::new(1)),
+        /* 1 */ hier(0, 0, NonZeroUsize::new(2), None),
+        /* 2 */ hier(4, 0, None, None),
     ]
 )]
 #[test_case(
@@ -43,17 +43,17 @@ use super::*;
         1, 0, 0, 0, 1,
     ],
     vec![
-        PointListItem { x: 0, y: 0, next: 5 },
-        PointListItem { x: 4, y: 1, next: 4 },
-        PointListItem { x: 2, y: 2, next: 3 },
-        PointListItem { x: 3, y: 3, next: 2 },
-        PointListItem { x: 1, y: 4, next: 0 },
-        PointListItem { x: 5, y: 4, next: 1 },
+        /* 0 */ PointListItem { x: 0, y: 0, next: 5 },
+        /* 1 */ PointListItem { x: 4, y: 1, next: 4 },
+        /* 2 */ PointListItem { x: 2, y: 2, next: 3 },
+        /* 3 */ PointListItem { x: 3, y: 3, next: 2 },
+        /* 4 */ PointListItem { x: 1, y: 4, next: 0 },
+        /* 5 */ PointListItem { x: 5, y: 4, next: 1 },
     ],
     vec![
-        root(NonZeroUsize::new(1)),
-        hier(0, 0, NonZeroUsize::new(2), None),
-        hier(2, 0, None, None),
+        /* 0 */ root(NonZeroUsize::new(1)),
+        /* 1 */ hier(0, 0, NonZeroUsize::new(2), None),
+        /* 2 */ hier(2, 0, None, None),
     ]
 )]
 #[test_case(
@@ -65,20 +65,20 @@ use super::*;
         1, 0, 1, 1, 1, 0, 1,
     ],
     vec![
-        PointListItem { x: 0, y: 0, next: 7 },
-        PointListItem { x: 6, y: 1, next: 5 },
-        PointListItem { x: 2, y: 2, next: 6 },
-        PointListItem { x: 4, y: 3, next: 4 },
-        PointListItem { x: 3, y: 4, next: 3 },
-        PointListItem { x: 1, y: 5, next: 0 },
-        PointListItem { x: 5, y: 5, next: 2 },
-        PointListItem { x: 7, y: 5, next: 1 },
+        /* 0 */ PointListItem { x: 0, y: 0, next: 7 },
+        /* 1 */ PointListItem { x: 6, y: 1, next: 5 },
+        /* 2 */ PointListItem { x: 2, y: 2, next: 6 },
+        /* 3 */ PointListItem { x: 4, y: 3, next: 4 },
+        /* 4 */ PointListItem { x: 3, y: 4, next: 3 },
+        /* 5 */ PointListItem { x: 1, y: 5, next: 0 },
+        /* 6 */ PointListItem { x: 5, y: 5, next: 2 },
+        /* 7 */ PointListItem { x: 7, y: 5, next: 1 },
     ],
     vec![
-        root(NonZeroUsize::new(1)),
-        hier(0, 0, NonZeroUsize::new(2), None),
-        hier(2, 0, None, NonZeroUsize::new(3)),
-        hier(3, 2, None, None),
+        /* 0 */ root(NonZeroUsize::new(1)),
+        /* 1 */ hier(0, 0, NonZeroUsize::new(2), None),
+        /* 2 */ hier(2, 0, None, NonZeroUsize::new(3)),
+        /* 3 */ hier(3, 2, None, None),
     ]
 )]
 fn small_test_images(
@@ -128,14 +128,14 @@ fn hierarchy_consistency() {
 fn contour_folding() {
     test_all_images(|testcase, contour_collection| {
         for contour in contour_collection.all_contours() {
-            if let Some(parent) = contour.parent() {
-                for point in contour.points() {
-                    let is_ok = match get_point_position_relative_to_contour(point, parent) {
-                        PointPosition::Inside | PointPosition::Vertex => true,
-                        PointPosition::Outside | PointPosition::Edge => false,
-                    };
-                    assert!(is_ok, "{testcase}: a contour point is outside its parent contour");
-                }
+            let Some(parent) = contour.parent() else { continue };
+            for point in contour.points() {
+                let is_ok = match get_point_position_relative_to_contour(point, parent) {
+                    PointPosition::Inside => true,
+                    PointPosition::Vertex => parent.is_outer(),
+                    PointPosition::Outside | PointPosition::Edge => false,
+                };
+                assert!(is_ok, "{testcase}: a contour point is outside its parent contour");
             }
         }
     })

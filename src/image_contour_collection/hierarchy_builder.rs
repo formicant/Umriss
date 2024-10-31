@@ -121,22 +121,22 @@ mod tests {
     #[test]
     fn contour_depicted_above() {
         let expected_heads = vec![
-            Default::default(),
-            head(0,  false, 0),
-            head(1,  true,  1),
-            head(2,  true,  1),
-            head(4,  false, 1),
-            head(5,  false, 3),
-            head(6,  true,  4),
-            head(12, false, 1),
-            head(13, true,  0),
+            /* 0 */ Default::default(),
+            /* 1 */ head(0,  false, 0),
+            /* 2 */ head(1,  true,  1),
+            /* 3 */ head(2,  true,  1),
+            /* 4 */ head(4,  false, 1),
+            /* 5 */ head(5,  false, 3),
+            /* 6 */ head(6,  true,  4),
+            /* 7 */ head(12, false, 1),
+            /* 8 */ head(13, true,  0),
         ];
         let expected_hierarchy = vec![
-            root(NonZeroUsize::new(1)),
-            hier(0,  0, None, NonZeroUsize::new(2)),
-            hier(4,  1, NonZeroUsize::new(3), None),
-            hier(5,  1, NonZeroUsize::new(4), None),
-            hier(12, 1, None, None),
+            /* 0 */ root(NonZeroUsize::new(1)),
+            /* 1 */ hier(0,  0, None, NonZeroUsize::new(2)),
+            /* 2 */ hier(4,  1, NonZeroUsize::new(3), None),
+            /* 3 */ hier(5,  1, NonZeroUsize::new(4), None),
+            /* 4 */ hier(12, 1, None, None),
         ];
         
         let mut builder = HierarchyBuilder::new();
