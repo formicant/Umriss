@@ -23,6 +23,26 @@ impl<'a> Contour<'a> {
         self.is_outer
     }
     
+    /// Iterate points of the contour.
+    /// 
+    /// Points are iterated from the top of the contour,
+    /// clockwise for outer contours and anti-clockwise for inner ones.
+    pub fn points(&'a self) -> impl Iterator<Item = (u32, u32)> + 'a {
+        self.even_point_pairs()
+            .flat_map(|((x0, y0), (x1, _))| [(x0, y0), (x1, y0)])
+    }
+    
+    /// Iterate pairs of adjacent points of the contour.
+    /// The first point of each pair equals the second point of the previous pair.
+    /// The first point of the first pair equals the second point of the last pair.
+    /// 
+    /// Points are iterated from the top of the contour,
+    /// clockwise for outer contours and anti-clockwise for inner ones.
+    pub fn point_pairs(&'a self) -> impl Iterator<Item = ((u32, u32), (u32, u32))> + 'a {
+        self.even_point_pairs()
+            .flat_map(|((x0, y0), (x1, y1))| [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1))])
+    }
+    
     /// Iterates only even points of the contour.
     /// 
     /// Even points are sufficient to represent a contour.
@@ -33,8 +53,19 @@ impl<'a> Contour<'a> {
     /// Points are iterated from the top of the contour,
     /// clockwise for outer contours and anti-clockwise for inner ones.
     pub fn even_points(&self) -> EvenPointIter<'a> {
-        let start_index = self.hierarchy[self.index.get()].head_point;
+        let start_index = self.hierarchy[self.index.get()].head_point_index;
         EvenPointIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
+    }
+    
+    /// Iterate pairs of even points of the contour.
+    /// 
+    /// Points are iterated from the top of the contour,
+    /// clockwise for outer contours and anti-clockwise for inner ones.
+    pub fn even_point_pairs(&self) -> EvenPointPairIter<'a> {
+        let start_index = self.hierarchy[self.index.get()].head_point_index;
+        let start = &self.point_list[start_index];
+        let previous_point = (start.x, start.y);
+        EvenPointPairIter { point_list: self.point_list, start_index, current_index: Some(start.next), previous_point }
     }
     
     /// Iterates the contour’s child contours.
@@ -79,6 +110,32 @@ impl<'a> Iterator for EvenPointIter<'a> {
                 None
             };
             (point.x, point.y)
+        })
+    }
+}
+
+pub struct EvenPointPairIter<'a> {
+    point_list: &'a[PointListItem],
+    start_index: usize,
+    current_index: Option<usize>,
+    previous_point: (u32, u32),
+}
+
+impl<'a> Iterator for EvenPointPairIter<'a> {
+    type Item = ((u32, u32), (u32, u32));
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current_index.map(|index| {
+            let item = &self.point_list[index];
+            let point = (item.x, item.y);
+            let pair = (self.previous_point, point);
+            self.previous_point = point;
+            self.current_index = if index != self.start_index {
+                Some(item.next)
+            } else {
+                None
+            };
+            pair
         })
     }
 }
