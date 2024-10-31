@@ -1,6 +1,7 @@
 use std::num::NonZeroUsize;
 use test_case::test_case;
 use crate::test_images::get_test_images;
+use crate::geometry::{PointPosition, get_point_position_relative_to_contour};
 use super::*;
 
 #[test_case(
@@ -120,6 +121,23 @@ fn hierarchy_consistency() {
         
         assert!(is_visited.iter().all(|&v| v),
             "{testcase}: not all hierarchy items accessible");
+    })
+}
+
+#[test]
+fn contour_folding() {
+    test_all_images(|testcase, contour_collection| {
+        for contour in contour_collection.all_contours() {
+            if let Some(parent) = contour.parent() {
+                for point in contour.points() {
+                    let is_ok = match get_point_position_relative_to_contour(point, parent) {
+                        PointPosition::Inside | PointPosition::Vertex => true,
+                        PointPosition::Outside | PointPosition::Edge => false,
+                    };
+                    assert!(is_ok, "{testcase}: a contour point is outside its parent contour");
+                }
+            }
+        }
     })
 }
 

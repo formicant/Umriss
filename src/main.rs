@@ -1,4 +1,5 @@
 mod image_contour_collection;
+mod geometry;
 mod test_images;
 mod silly_svg;
 
@@ -14,7 +15,9 @@ fn main() -> Result<(), Error> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
     process_test_images();
+    measure_performance("noise_200x100_white", true, 1000);
     measure_performance("text_5012x7060_math", true, 100);
+    measure_performance("text_7717x10672_gospel", true, 50);
     
     Ok(())
 }
