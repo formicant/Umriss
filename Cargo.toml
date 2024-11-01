@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+euclid = "0.22.11"
 image = "0.25.4"
 itertools = "0.13.0"
 vector2d = "2.2.0"
