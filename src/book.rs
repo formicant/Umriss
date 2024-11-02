@@ -141,7 +141,7 @@ impl Book {
 }
 
 #[derive(Debug)]
-pub struct PageContent {
+struct PageContent {
     size: Size2D<i32>,
     /// Glyphs that appear only on this page and more than once.
     /// Key is the index in `Book::glyphs`, value is occurrence count.

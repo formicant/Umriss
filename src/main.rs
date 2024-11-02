@@ -9,9 +9,8 @@ use std::fs;
 use std::time::Instant;
 use book::Book;
 use image_contour_collection::ImageContourCollection;
-use silly_svg::contours_to_svg;
+use silly_svg::write_book_as_multiple_svg_files;
 use test_images::{get_test_images, get_test_image};
-use euclid::default::{Point2D, Size2D, Vector2D};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -23,27 +22,45 @@ fn main() -> Result<(), Error> {
     // measure_performance("text_5012x7060_math", true, 100);
     // measure_performance("text_7717x10672_gospel", true, 50);
     
-    let images = ["ku/003", "ku/021"];
-    let collections = images.iter().map(|name| ImageContourCollection::black_on_white(&get_test_image(name)));
-    let book = Book::new(collections);
-    
-    println!("{:?}", book);
+    process_ku();
     
     Ok(())
 }
 
-fn process_test_images() {
-    fs::create_dir_all("output").unwrap();
-    println!("Processing test images:");
-    let inverted = true;
-    for (name, image) in get_test_images() {
-        println!("- {name}");
-        let contour_collection = ImageContourCollection::new(&image, inverted);
-        let svg_contents = contours_to_svg(&contour_collection);
-        fs::write(format!("output/{name}.svg"), svg_contents).unwrap();
-    }
-    println!("");
+fn process_ku() {
+    let start_decoding = Instant::now();
+    let images: Vec<_> = (1..=402).map(|i| get_test_image(&format!("ku/{i:03}"))).collect();
+    let decoding = start_decoding.elapsed();
+    println!("Decoding:   {:.3} s", decoding.as_secs_f64());
+    
+    let start_contouring = Instant::now();
+    let contours: Vec<_> = images.iter().map(ImageContourCollection::black_on_white).collect();
+    let contouring = start_contouring.elapsed();
+    println!("Contouring: {:.3} s", contouring.as_secs_f64());
+    
+    let start_booking = Instant::now();
+    let book = Book::new(contours.into_iter());
+    let booking = start_booking.elapsed();
+    println!("Booking:    {:.3} s", booking.as_secs_f64());
+    
+    let start_writing = Instant::now();
+    write_book_as_multiple_svg_files(&book);
+    let writing = start_writing.elapsed();
+    println!("Writing:    {:.3} s", writing.as_secs_f64());
 }
+
+// fn process_test_images() {
+//     fs::create_dir_all("output").unwrap();
+//     println!("Processing test images:");
+//     let inverted = true;
+//     for (name, image) in get_test_images() {
+//         println!("- {name}");
+//         let contour_collection = ImageContourCollection::new(&image, inverted);
+//         let svg_contents = contours_to_svg(&contour_collection);
+//         fs::write(format!("output/{name}.svg"), svg_contents).unwrap();
+//     }
+//     println!("");
+// }
 
 fn measure_performance(name: &str, inverted: bool, iterations: usize) {
     let image = get_test_image(name);
