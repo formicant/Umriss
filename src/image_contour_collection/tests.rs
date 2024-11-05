@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 use test_case::test_case;
 use crate::test_images::get_test_images;
-use crate::geometry::{PointPosition, get_point_position_relative_to_contour};
+use crate::geometry::{PointPosition, Polygonlike, Orthopolygonlike};
 use super::*;
 
 #[test_case(
@@ -129,8 +129,8 @@ fn contour_folding() {
     test_all_images(|testcase, contour_collection| {
         for contour in contour_collection.all_contours() {
             let Some(parent) = contour.parent() else { continue };
-            for point in contour.points() {
-                let is_ok = match get_point_position_relative_to_contour(point, parent) {
+            for point in contour.vertices() {
+                let is_ok = match parent.get_point_position(point) {
                     PointPosition::Inside => true,
                     PointPosition::Vertex => parent.is_outer(),
                     PointPosition::Outside | PointPosition::Edge => false,

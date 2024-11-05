@@ -1,4 +1,7 @@
 use std::num::NonZeroUsize;
+use euclid::default::Point2D;
+use crate::more_itertools::MoreIterTools;
+use crate::geometry::{Orthopolygonlike, Polygonlike};
 use super::hierarchy_builder::HierarchyItem;
 use super::point_list_builder::PointListItem;
 
@@ -21,51 +24,6 @@ impl<'a> Contour<'a> {
     /// and `false` for inner contours (holes).
     pub fn is_outer(&self) -> bool {
         self.is_outer
-    }
-    
-    /// Iterate points of the contour.
-    /// 
-    /// Points are iterated from the top of the contour,
-    /// clockwise for outer contours and anti-clockwise for inner ones.
-    pub fn points(&'a self) -> impl Iterator<Item = (u32, u32)> + 'a {
-        self.even_point_pairs()
-            .flat_map(|((x0, y0), (x1, _))| [(x0, y0), (x1, y0)])
-    }
-    
-    /// Iterate pairs of adjacent points of the contour.
-    /// The first point of each pair equals the second point of the previous pair.
-    /// The first point of the first pair equals the second point of the last pair.
-    /// 
-    /// Points are iterated from the top of the contour,
-    /// clockwise for outer contours and anti-clockwise for inner ones.
-    pub fn point_pairs(&'a self) -> impl Iterator<Item = ((u32, u32), (u32, u32))> + 'a {
-        self.even_point_pairs()
-            .flat_map(|((x0, y0), (x1, y1))| [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1))])
-    }
-    
-    /// Iterates only even points of the contour.
-    /// 
-    /// Even points are sufficient to represent a contour.
-    /// Odd points can be derived from them unambiguously:
-    /// an odd point inherits its y coordinate from the previous
-    /// even point and x coordinate from the next even point.
-    /// 
-    /// Points are iterated from the top of the contour,
-    /// clockwise for outer contours and anti-clockwise for inner ones.
-    pub fn even_points(&self) -> EvenPointIter<'a> {
-        let start_index = self.hierarchy[self.index.get()].head_point_index;
-        EvenPointIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
-    }
-    
-    /// Iterate pairs of even points of the contour.
-    /// 
-    /// Points are iterated from the top of the contour,
-    /// clockwise for outer contours and anti-clockwise for inner ones.
-    pub fn even_point_pairs(&self) -> EvenPointPairIter<'a> {
-        let start_index = self.hierarchy[self.index.get()].head_point_index;
-        let start = &self.point_list[start_index];
-        let previous_point = (start.x, start.y);
-        EvenPointPairIter { point_list: self.point_list, start_index, current_index: Some(start.next), previous_point }
     }
     
     /// Iterates the contour’s child contours.
@@ -92,14 +50,30 @@ impl<'a> Contour<'a> {
     }
 }
 
-pub struct EvenPointIter<'a> {
+impl<'a> Orthopolygonlike<u32> for Contour<'a> {
+    fn even_vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<u32>> {
+        let start_index = self.hierarchy[self.index.get()].head_point_index;
+        EvenVertexIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
+    }
+}
+
+impl<'a> Polygonlike<u32> for Contour<'a> {
+    fn vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<u32>> {
+        self.even_vertices()
+            .circular_pairs()
+            .flat_map(|(p0, p1)| [p0, Point2D::new(p1.x, p0.y)])
+    }
+}
+
+
+pub struct EvenVertexIter<'a> {
     point_list: &'a[PointListItem],
     start_index: usize,
     current_index: Option<usize>,
 }
 
-impl<'a> Iterator for EvenPointIter<'a> {
-    type Item = (u32, u32);
+impl<'a> Iterator for EvenVertexIter<'a> {
+    type Item = Point2D<u32>;
     
     fn next(&mut self) -> Option<Self::Item> {
         self.current_index.map(|index| {
@@ -109,33 +83,7 @@ impl<'a> Iterator for EvenPointIter<'a> {
             } else {
                 None
             };
-            (point.x, point.y)
-        })
-    }
-}
-
-pub struct EvenPointPairIter<'a> {
-    point_list: &'a[PointListItem],
-    start_index: usize,
-    current_index: Option<usize>,
-    previous_point: (u32, u32),
-}
-
-impl<'a> Iterator for EvenPointPairIter<'a> {
-    type Item = ((u32, u32), (u32, u32));
-    
-    fn next(&mut self) -> Option<Self::Item> {
-        self.current_index.map(|index| {
-            let item = &self.point_list[index];
-            let point = (item.x, item.y);
-            let pair = (self.previous_point, point);
-            self.previous_point = point;
-            self.current_index = if index != self.start_index {
-                Some(item.next)
-            } else {
-                None
-            };
-            pair
+            Point2D::new(point.x, point.y)
         })
     }
 }

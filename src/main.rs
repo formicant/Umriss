@@ -4,6 +4,7 @@ mod test_images;
 mod silly_svg;
 mod glyph;
 mod book;
+mod more_itertools;
 
 use std::fs;
 use std::time::Instant;

@@ -7,6 +7,7 @@ edition = "2021"
 euclid = "0.22.11"
 image = "0.25.4"
 itertools = "0.13.0"
+num-traits = "0.2.19"
 vector2d = "2.2.0"
 
 [dev-dependencies]

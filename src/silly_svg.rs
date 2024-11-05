@@ -2,6 +2,7 @@ use std::fs;
 use itertools::Itertools;
 use euclid::default::{Point2D, Vector2D, Size2D};
 use crate::book::{Book, Page, GlyphKind};
+use crate::geometry::Orthopolygonlike;
 use crate::glyph::Glyph;
 
 pub fn write_book_as_multiple_svg_files(book: &Book) {
@@ -56,29 +57,29 @@ fn get_page_contents(page: &Page) -> String {
 
 fn get_path(location: Point2D<i32>, glyph: &Glyph, object_id: Option<usize>) -> String {
     let mut nodes = Vec::new();
-    let mut previous_point = None;
+    let mut previous_vertex = None;
     
     for contour in glyph.contours() {
         let mut start = None;
-        for &point in contour.even_points() {
-            if let Some(previous) = previous_point {
-                let relative: Vector2D<i32> = point - previous;
+        for vertex in contour.even_vertices() {
+            if let Some(previous) = previous_vertex {
+                let relative: Vector2D<i32> = vertex - previous;
                 if let None = start {
-                    start = Some(point);
+                    start = Some(vertex);
                     nodes.push(format!("m{},{}", relative.x, relative.y));
                 } else {
                     nodes.push(format!("h{}v{}", relative.x, relative.y));
                 }
             } else {
-                let absolute = location + point.to_vector();
-                start = Some(point);
+                let absolute = location + vertex.to_vector();
+                start = Some(vertex);
                 nodes.push(format!("M{},{}", absolute.x, absolute.y));
             }
-            previous_point = Some(point);
+            previous_vertex = Some(vertex);
         }
-        let relative = start.unwrap() - previous_point.unwrap();
+        let relative = start.unwrap() - previous_vertex.unwrap();
         nodes.push(format!("h{}z", relative.x));
-        previous_point = start;
+        previous_vertex = start;
     }
     
     let data = nodes.concat();
