@@ -3,26 +3,30 @@ use crate::more_itertools::MoreIterTools;
 use super::Number;
 
 #[derive(Debug)]
-pub struct Polygon<T: Number> {
-    vertices: Vec<Point2D<T>>,
+pub struct Polygon<N: Number> {
+    vertices: Vec<Point2D<N>>,
 }
 
-impl<T: Number> Polygon<T> {
-    pub fn new(vertices: impl Iterator<Item = Point2D<T>>) -> Self {
+impl<N: Number> Polygon<N> {
+    pub fn new(vertices: impl Iterator<Item = Point2D<N>>) -> Self {
         Self { vertices: vertices.collect() }
+    }
+    
+    pub fn from(vertices: Vec<Point2D<N>>) -> Self {
+        Self { vertices }
     }
 }
 
-pub trait Polygonlike<T: Number> {
-    fn vertices(&self) -> impl Iterator<Item = Point2D<T>>;
+pub trait Polygonlike<N: Number> {
+    fn vertices(&self) -> impl Iterator<Item = Point2D<N>>;
     
-    fn edges(&self) -> impl Iterator<Item = (Point2D<T>, Point2D<T>)> {
+    fn edges(&self) -> impl Iterator<Item = (Point2D<N>, Point2D<N>)> {
         self.vertices().circular_pairs()
     }
 }
 
-impl<T: Number> Polygonlike<T> for Polygon<T> {
-    fn vertices(&self) -> impl Iterator<Item = Point2D<T>> {
+impl<N: Number> Polygonlike<N> for Polygon<N> {
+    fn vertices(&self) -> impl Iterator<Item = Point2D<N>> {
         self.vertices.iter().cloned()
     }
 }
