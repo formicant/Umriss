@@ -1,19 +1,19 @@
 use euclid::default::Point2D;
-use num_traits::cast::NumCast;
 use crate::more_itertools::MoreIterTools;
+use super::Number;
 
 #[derive(Debug)]
-pub struct Polygon<T: Copy + Ord + NumCast> {
+pub struct Polygon<T: Number> {
     vertices: Vec<Point2D<T>>,
 }
 
-impl<T: Copy + Ord + NumCast> Polygon<T> {
+impl<T: Number> Polygon<T> {
     pub fn new(vertices: impl Iterator<Item = Point2D<T>>) -> Self {
         Self { vertices: vertices.collect() }
     }
 }
 
-pub trait Polygonlike<T: Copy + Ord + NumCast> {
+pub trait Polygonlike<T: Number> {
     fn vertices(&self) -> impl Iterator<Item = Point2D<T>>;
     
     fn edges(&self) -> impl Iterator<Item = (Point2D<T>, Point2D<T>)> {
@@ -21,7 +21,7 @@ pub trait Polygonlike<T: Copy + Ord + NumCast> {
     }
 }
 
-impl<T: Copy + Ord + NumCast> Polygonlike<T> for Polygon<T> {
+impl<T: Number> Polygonlike<T> for Polygon<T> {
     fn vertices(&self) -> impl Iterator<Item = Point2D<T>> {
         self.vertices.iter().cloned()
     }

@@ -1,6 +1,6 @@
 use euclid::default::Point2D;
-use num_traits::cast::NumCast;
 use crate::more_itertools::MoreIterTools;
+use super::Number;
 use super::polygon::Polygonlike;
 
 /// Position of a point relative to an orthopolygon.
@@ -20,11 +20,11 @@ pub enum PointPosition {
 /// Two `Orthopolygon`s are considered equal only if the have identical vertex lists,
 /// i.e. they have the same shape and also start from the same point and have the same direction.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Orthopolygon<T: Copy + Ord + NumCast> {
+pub struct Orthopolygon<T: Number> {
     even_vertices: Vec<Point2D<T>>,
 }
 
-impl<T: Copy + Ord + NumCast> Orthopolygon<T> {
+impl<T: Number> Orthopolygon<T> {
     /// Creates an orthopolygon from an iterator of even vertices.
     pub fn new(even_vertices: impl Iterator<Item = Point2D<T>>) -> Self {
         Self { even_vertices: even_vertices.collect() }
@@ -40,7 +40,7 @@ impl<T: Copy + Ord + NumCast> Orthopolygon<T> {
 /// Represents a polygon with all edges parallel to the coordinate axes.
 /// Each even edge is parallel to the x axis.
 /// Each odd edge is parallel to the y axis.
-pub trait Orthopolygonlike<T: Copy + Ord + NumCast>: Polygonlike<T> {
+pub trait Orthopolygonlike<T: Number>: Polygonlike<T> {
     /// Iterates even vertices of the orthopolygon.
     /// 
     /// Even vertices are sufficient to represent an orthopolygon.
@@ -51,7 +51,7 @@ pub trait Orthopolygonlike<T: Copy + Ord + NumCast>: Polygonlike<T> {
     
     /// Creates a new orthopolygon of the same shape with, possibly,
     /// other type of points (`Point2D<TDest>`).
-    fn to_orthopolygon<TDest: Copy + Ord + NumCast>(&self) -> Orthopolygon<TDest> {
+    fn to_orthopolygon<TDest: Number>(&self) -> Orthopolygon<TDest> {
         let even_vertices = self.even_vertices()
             .map(|v| v.cast())
             .collect();
@@ -81,13 +81,13 @@ pub trait Orthopolygonlike<T: Copy + Ord + NumCast>: Polygonlike<T> {
     }
 }
 
-impl<T: Copy + Ord + NumCast> Orthopolygonlike<T> for Orthopolygon<T> {
+impl<T: Number> Orthopolygonlike<T> for Orthopolygon<T> {
     fn even_vertices(&self) -> impl Iterator<Item = Point2D<T>> {
         self.even_vertices.iter().cloned()
     }
 }
 
-impl<T: Copy + Ord + NumCast> Polygonlike<T> for Orthopolygon<T> {
+impl<T: Number> Polygonlike<T> for Orthopolygon<T> {
     fn vertices(&self) -> impl Iterator<Item = Point2D<T>> {
         self.even_vertices()
             .circular_pairs()
