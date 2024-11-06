@@ -1,7 +1,9 @@
 use std::num::NonZeroUsize;
+use image::Luma;
+use itertools::Itertools;
 use test_case::test_case;
 use crate::test_images::get_test_images;
-use crate::geometry::{PointPosition, Polygonlike, Orthopolygonlike};
+use crate::geometry::{draw_orthopolygons, Orthopolygonlike, PointPosition, Polygonlike};
 use super::*;
 
 #[test_case(
@@ -94,7 +96,7 @@ fn small_test_images(
 
 #[test]
 fn hierarchy_consistency() {
-    test_all_images(|testcase, contour_collection| {
+    test_all_images(|testcase, _, _, contour_collection| {
         let h = contour_collection.hierarchy;
         let mut is_visited = vec![false; h.len()];
         
@@ -126,7 +128,7 @@ fn hierarchy_consistency() {
 
 #[test]
 fn contour_folding() {
-    test_all_images(|testcase, contour_collection| {
+    test_all_images(|testcase, _, _, contour_collection| {
         for contour in contour_collection.all_contours() {
             let Some(parent) = contour.parent() else { continue };
             for point in contour.vertices() {
@@ -141,7 +143,28 @@ fn contour_folding() {
     })
 }
 
-fn test_all_images(test: impl Fn(String, ImageContourCollection)) {
+#[test]
+fn rasterization() {
+    test_all_images(|testcase, image, inverted, contour_collection| {
+        let (width, height) = contour_collection.dimensions();
+        let contours: Vec<_> = contour_collection.all_contours().collect();
+        let mut canvas = GrayImage::new(width, height);
+        
+        draw_orthopolygons(&mut canvas, |_| 255, contours.iter());
+        canvas.save(format!("output/{testcase}.png")).unwrap();
+        
+        let mut pixels = canvas.pixels().zip_eq(image.pixels());
+        let are_equal = if inverted {
+            pixels.all(|(&Luma([actual]), &Luma([expected]))| 255 - actual == expected)
+        } else {
+            pixels.all(|(actual, expected)| actual == expected)
+        };
+        
+        assert!(are_equal, "{testcase}: rasterized contours differ from the original image");
+    })
+}
+
+fn test_all_images(test: impl Fn(String, &GrayImage, bool, ImageContourCollection)) {
     for (name, image) in get_test_images() {
         for &inverted in [false, true].iter() {
             let contour_collection = ImageContourCollection::new(&image, inverted);
@@ -150,7 +173,7 @@ fn test_all_images(test: impl Fn(String, ImageContourCollection)) {
             } else {
                 format!("Image: '{name}'")
             };
-            test(testcase, contour_collection);
+            test(testcase, &image, inverted, contour_collection);
         }
     }
 }
