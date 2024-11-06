@@ -84,7 +84,7 @@ use super::*;
         /* 3 */ hier(3, 2, None, None),
     ]
 )]
-fn small_test_images(
+fn test_small_images(
     width: u32, height: u32, image_pixels: Vec<u8>,
     expected_point_list: Vec<PointListItem>, expected_hierarchy: Vec<HierarchyItem>
 ) {
@@ -96,7 +96,7 @@ fn small_test_images(
 }
 
 #[test]
-fn hierarchy_consistency() {
+fn test_hierarchy_consistency() {
     test_all_images(|testcase, _, _, contour_collection| {
         let h = contour_collection.hierarchy;
         let mut is_visited = vec![false; h.len()];
@@ -128,7 +128,7 @@ fn hierarchy_consistency() {
 }
 
 #[test]
-fn contour_folding() {
+fn test_contour_folding() {
     test_all_images(|testcase, _, _, contour_collection| {
         let (width, height) = contour_collection.dimensions();
         for contour in contour_collection.all_contours() {
@@ -159,7 +159,6 @@ fn rasterization() {
         let mut canvas = GrayImage::new(width as u32, height as u32);
         
         draw_orthopolygons(&mut canvas, |_| 255, contours.iter());
-        canvas.save(format!("output/{testcase}.png")).unwrap();
         
         let mut pixels = canvas.pixels().zip_eq(image.pixels());
         let are_equal = if inverted {

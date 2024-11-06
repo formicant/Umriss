@@ -23,6 +23,13 @@ pub trait Polygonlike<N: Number> {
     fn edges(&self) -> impl Iterator<Item = (Point2D<N>, Point2D<N>)> {
         self.vertices().circular_pairs()
     }
+    
+    /// Creates a new orthopolygon equal to the current,
+    /// possibly, with different type of points (`Point2D<NDest>`).
+    fn to_polygon<NDest: Number>(&self) -> Polygon<NDest> {
+        let vertices: Vec<Point2D<NDest>> = self.vertices().map(|v| v.cast()).collect();
+        Polygon::from(vertices)
+    }
 }
 
 impl<N: Number> Polygonlike<N> for Polygon<N> {

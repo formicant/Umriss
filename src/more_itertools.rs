@@ -44,3 +44,20 @@ where
         }
     }
 }
+
+
+// ---------
+
+#[cfg(test)]
+mod tests {
+    use test_case::test_case;
+    use super::*;
+
+    #[test_case(vec![] => Vec::<(i32, i32)>::new())]
+    #[test_case(vec![0] => vec![(0, 0)])]
+    #[test_case(vec![0, 1] => vec![(0, 1), (1, 0)])]
+    #[test_case(vec![3, 2, 1, 0] => vec![(3, 2), (2, 1), (1, 0), (0, 3)])]
+    fn test_circular_pairs(items: Vec<i32>) -> Vec<(i32, i32)> {
+        items.into_iter().circular_pairs().collect()
+    }
+}

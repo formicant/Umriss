@@ -78,27 +78,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty() {
+    fn test_empty() {
         let actual = RowChangeIter::empty();
         let expected = vec![END];
         assert!(actual.eq(expected));
     }
 
-    #[test_case(vec![1], false, vec![0, 1, END])]
-    #[test_case(vec![1], true, vec![END])]
-    #[test_case(vec![0, 0], false, vec![END])]
-    #[test_case(vec![0, 0], true, vec![0, 2, END])]
-    #[test_case(vec![1, 1], false, vec![0, 2, END])]
-    #[test_case(vec![1, 1], true, vec![END])]
-    #[test_case(vec![0, 1, 0], false, vec![1, 2, END])]
-    #[test_case(vec![0, 1, 0], true, vec![0, 1, 2, 3, END])]
-    #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], false, vec![0, 2, 5, 6, 7, 8, END])]
-    #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], true, vec![2, 5, 6, 7, END])]
-    fn pixel_row(row_pixels: Vec<u8>, edge_value: bool, expected: Vec<i32>) {
+    #[test_case(vec![1], false => vec![0, 1, END])]
+    #[test_case(vec![1], true => vec![END])]
+    #[test_case(vec![0, 0], false => vec![END])]
+    #[test_case(vec![0, 0], true => vec![0, 2, END])]
+    #[test_case(vec![1, 1], false => vec![0, 2, END])]
+    #[test_case(vec![1, 1], true => vec![END])]
+    #[test_case(vec![0, 1, 0], false => vec![1, 2, END])]
+    #[test_case(vec![0, 1, 0], true => vec![0, 1, 2, 3, END])]
+    #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], false => vec![0, 2, 5, 6, 7, 8, END])]
+    #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], true => vec![2, 5, 6, 7, END])]
+    fn test_pixel_row(row_pixels: Vec<u8>, edge_value: bool) -> Vec<i32> {
         let width = row_pixels.len() as u32;
         let image = GrayImage::from_vec(width, 1, row_pixels).unwrap();
         let row = image.rows().next().unwrap();
-        let actual = RowChangeIter::from(row, edge_value);
-        assert!(actual.eq(expected));
+        RowChangeIter::from(row, edge_value).collect()
     }
 }

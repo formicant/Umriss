@@ -59,24 +59,23 @@ mod tests {
     use test_case::test_case;
     use super::*;
 
-    #[test_case(&[END], &[END], vec![])]
-    #[test_case(&[0, END], &[END], vec![RowPairChange{ kind: RowPairChangeKind::Top, x: 0 }])]
-    #[test_case(&[END], &[0, END], vec![RowPairChange{ kind: RowPairChangeKind::Bottom, x: 0 }])]
-    #[test_case(&[0, END], &[0, END], vec![RowPairChange{ kind: RowPairChangeKind::Both, x: 0 }])]
+    #[test_case(&[END],    &[END]    => Vec::<RowPairChange>::new())]
+    #[test_case(&[0, END], &[END]    => vec![RowPairChange{ kind: RowPairChangeKind::Top,    x: 0 }])]
+    #[test_case(&[END],    &[0, END] => vec![RowPairChange{ kind: RowPairChangeKind::Bottom, x: 0 }])]
+    #[test_case(&[0, END], &[0, END] => vec![RowPairChange{ kind: RowPairChangeKind::Both,   x: 0 }])]
     #[test_case(
         &[1, 38, 39, 41, END],
-        &[1, 2, 39, 42, END],
-        vec![
-            RowPairChange{ kind: RowPairChangeKind::Both, x: 1 },
+        &[1, 2, 39, 42, END]
+        => vec![
+            RowPairChange{ kind: RowPairChangeKind::Both,   x: 1 },
             RowPairChange{ kind: RowPairChangeKind::Bottom, x: 2 },
-            RowPairChange{ kind: RowPairChangeKind::Top, x: 38 },
-            RowPairChange{ kind: RowPairChangeKind::Both, x: 39 },
-            RowPairChange{ kind: RowPairChangeKind::Top, x: 41 },
+            RowPairChange{ kind: RowPairChangeKind::Top,    x: 38 },
+            RowPairChange{ kind: RowPairChangeKind::Both,   x: 39 },
+            RowPairChange{ kind: RowPairChangeKind::Top,    x: 41 },
             RowPairChange{ kind: RowPairChangeKind::Bottom, x: 42 },
         ]
     )]
-    fn pixel_row(run_top: &[i32], run_bottom: &[i32], expected: Vec<RowPairChange>) {
-        let actual = RowPairChangeIter::new(run_top, run_bottom);
-        assert!(actual.eq(expected));
+    fn test_pixel_row(run_top: &[i32], run_bottom: &[i32]) -> Vec<RowPairChange> {
+        RowPairChangeIter::new(run_top, run_bottom).collect()
     }
 }

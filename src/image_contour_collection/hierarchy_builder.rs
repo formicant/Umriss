@@ -119,7 +119,7 @@ mod tests {
     /// 0 └──8→0──┘0      └───────────────┘0
     /// ```
     #[test]
-    fn contour_depicted_above() {
+    fn test_contour_depicted_above() {
         let expected_heads = vec![
             /* 0 */ Default::default(),
             /* 1 */ head(0,  false, 0),
