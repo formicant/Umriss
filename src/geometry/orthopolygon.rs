@@ -62,16 +62,16 @@ pub trait Orthopolygonlike: Polygonlike<i32> {
         let mut intersections = 0;
         
         for (Point2D { x: x0, y: y0, .. }, Point2D { x: x1, y: y1, .. }) in self.even_vertices().circular_pairs() {
-            let is_x_between = (x0 <= x && x < x1) || (x1 <= x && x < x0);
-            if y0 < y && is_x_between {
-                intersections += 1;
-            }
-            if (y0 == y && (x == x0 || x == x1)) || (y == y1 && x == x1) {
+            if (y == y0 && (x == x0 || x == x1)) || (y == y1 && x == x1) {
                 return PointPosition::Vertex;
             }
+            let is_x_between = (x0 <= x && x < x1) || (x1 <= x && x < x0);
             let is_y_between = (y0 <= y && y < y1) || (y1 <= y && y < y0);
             if  (y == y0 && is_x_between) || (x == x1 && is_y_between) {
                 return PointPosition::Edge;
+            }
+            if y0 < y && is_x_between {
+                intersections += 1;
             }
         }
         if intersections % 2 == 0 { PointPosition::Outside } else { PointPosition::Inside }

@@ -1,5 +1,6 @@
 use std::num::NonZeroUsize;
 use image::Luma;
+use euclid::default::Point2D;
 use itertools::Itertools;
 use test_case::test_case;
 use crate::test_images::get_test_images;
@@ -129,21 +130,28 @@ fn hierarchy_consistency() {
 #[test]
 fn contour_folding() {
     test_all_images(|testcase, _, _, contour_collection| {
+        let (width, height) = contour_collection.dimensions();
         for contour in contour_collection.all_contours() {
-            let Some(parent) = contour.parent() else { continue };
-            for point in contour.vertices() {
-                let is_ok = match parent.get_point_position(point) {
-                    PointPosition::Inside => true,
-                    PointPosition::Vertex => parent.is_outer(),
-                    PointPosition::Outside | PointPosition::Edge => false,
-                };
-                assert!(is_ok, "{testcase}: a contour point is outside its parent contour");
+            if let Some(parent) = contour.parent() {
+                for point in contour.vertices() {
+                    let is_ok = match parent.get_point_position(point) {
+                        PointPosition::Inside => true,
+                        PointPosition::Vertex => parent.is_outer(),
+                        PointPosition::Outside | PointPosition::Edge => false,
+                    };
+                    assert!(is_ok, "{testcase}: a contour point is outside its parent contour");
+                }
+            } else {
+                for Point2D { x, y, .. } in contour.vertices() {
+                    let is_ok = 0 <= x && x <= width && 0 <= y && y <= height;
+                    assert!(is_ok, "{testcase}: a contour point is outside the image bounds");
+                }
             }
         }
     })
 }
 
-//#[test]
+#[test]
 fn rasterization() {
     test_all_images(|testcase, image, inverted, contour_collection| {
         let (width, height) = contour_collection.dimensions();
