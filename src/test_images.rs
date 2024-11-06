@@ -44,3 +44,20 @@ fn is_not_in_blacklist(name: &str) -> bool {
 }
 
 const TEST_IMAGES_DIRECTORY: &'static str = "test_images";
+
+
+// ---------
+
+#[cfg(test)]
+mod tests {
+    use image::Luma;
+    use super::*;
+
+    #[test]
+    fn images_are_binarized() {
+        for (name, image) in get_test_images() {
+            let is_binarized = image.pixels().all(|&Luma([value])| value == 0 || value == 255);
+            assert!(is_binarized, "Image '{name}' is not binarized");
+        }
+    }
+}
