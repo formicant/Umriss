@@ -3,7 +3,17 @@ use itertools::Itertools;
 use euclid::default::{Point2D, Vector2D, Size2D};
 use crate::book::{Book, Page, GlyphKind};
 use crate::geometry::Orthopolygonlike;
-use crate::glyph::Glyph;
+use crate::image_contour_collection::ImageContourCollection;
+
+pub fn write_contour_collection_as_svg_file(contour_collection: &ImageContourCollection, name: &str) {
+    let (width, height) = contour_collection.dimensions();
+    let contours: Vec<_> = contour_collection.all_contours().collect();
+    let path = get_path(Point2D::zero(), contours.iter(), None);
+    let svg_contents = format!(r#"<svg version="1.1" width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+ {path}
+</svg>"#);
+    fs::write(format!("output/{name}.svg"), svg_contents).unwrap();
+}
 
 pub fn write_book_as_multiple_svg_files(book: &Book) {
     let shared_contents = get_shared_contents(book);
@@ -20,7 +30,7 @@ pub fn write_book_as_multiple_svg_files(book: &Book) {
 
 fn get_shared_contents(book: &Book) -> Option<String> {
     let mut glyph_definitions = book.shared_glyphs()
-        .map(|g| get_path(Point2D::zero(), g.glyph(), Some(g.id())));
+        .map(|g| get_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
     let definition_lines = glyph_definitions.join("\n  ");
     if definition_lines.len() > 0 {
         Some(format!(r#"<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -36,10 +46,10 @@ fn get_shared_contents(book: &Book) -> Option<String> {
 fn get_page_contents(page: &Page) -> String {
     let Size2D { width, height, .. } = page.size();
     let mut glyph_definitions = page.shared_glyphs()
-        .map(|g| get_path(Point2D::zero(), g.glyph(), Some(g.id())));
+        .map(|g| get_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
     let mut glyphs = page.glyph_entries()
         .map(|entry| match entry.kind() {
-            GlyphKind::Unique => get_path(entry.location(), &entry.glyph(), None),
+            GlyphKind::Unique => get_path(entry.location(), entry.glyph().contours().iter(), None),
             GlyphKind::PageShared => format!("<use x=\"{}\" y=\"{}\" href=\"#{}\" fill=\"red\"/>", entry.location().x, entry.location().y, entry.id()),
             GlyphKind::BookShared => format!("<use x=\"{}\" y=\"{}\" href=\"_.svg#{}\" fill=\"blue\"/>", entry.location().x, entry.location().y, entry.id()),
         });
@@ -55,11 +65,15 @@ fn get_page_contents(page: &Page) -> String {
 </svg>"#)
 }
 
-fn get_path(location: Point2D<i32>, glyph: &Glyph, object_id: Option<usize>) -> String {
+fn get_path<'a, Ortho: Orthopolygonlike + 'a>(
+    location: Point2D<i32>,
+    contours: impl Iterator<Item = &'a Ortho>,
+    object_id: Option<usize>,
+) -> String {
     let mut nodes = Vec::new();
     let mut previous_vertex = None;
     
-    for contour in glyph.contours() {
+    for contour in contours {
         let mut start = None;
         for vertex in contour.even_vertices() {
             if let Some(previous) = previous_vertex {

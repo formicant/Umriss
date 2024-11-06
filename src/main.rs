@@ -10,7 +10,7 @@ use std::fs;
 use std::time::Instant;
 use book::Book;
 use image_contour_collection::ImageContourCollection;
-use silly_svg::write_book_as_multiple_svg_files;
+use silly_svg::{write_contour_collection_as_svg_file, write_book_as_multiple_svg_files};
 use test_images::{get_test_images, get_test_image};
 
 type Error = Box<dyn std::error::Error>;
@@ -18,12 +18,12 @@ type Error = Box<dyn std::error::Error>;
 fn main() -> Result<(), Error> {
     std::env::set_var("RUST_BACKTRACE", "1");
     
-    // process_test_images();
-    // measure_performance("noise_200x100_white", true, 1000);
-    // measure_performance("text_5012x7060_math", true, 100);
-    // measure_performance("text_7717x10672_gospel", true, 50);
+    process_test_images();
+    measure_performance("noise_200x100_white", true, 1000);
+    measure_performance("text_5012x7060_math", true, 100);
+    measure_performance("text_7717x10672_gospel", true, 50);
     
-    process_ku();
+    // process_ku();
     
     Ok(())
 }
@@ -50,18 +50,17 @@ fn process_ku() {
     println!("Writing:    {:.3} s", writing.as_secs_f64());
 }
 
-// fn process_test_images() {
-//     fs::create_dir_all("output").unwrap();
-//     println!("Processing test images:");
-//     let inverted = true;
-//     for (name, image) in get_test_images() {
-//         println!("- {name}");
-//         let contour_collection = ImageContourCollection::new(&image, inverted);
-//         let svg_contents = contours_to_svg(&contour_collection);
-//         fs::write(format!("output/{name}.svg"), svg_contents).unwrap();
-//     }
-//     println!("");
-// }
+fn process_test_images() {
+    fs::create_dir_all("output").unwrap();
+    println!("Processing test images:");
+    let inverted = true;
+    for (name, image) in get_test_images() {
+        println!("- {name}");
+        let contour_collection = ImageContourCollection::new(&image, inverted);
+        write_contour_collection_as_svg_file(&contour_collection, &name);
+    }
+    println!("");
+}
 
 fn measure_performance(name: &str, inverted: bool, iterations: usize) {
     let image = get_test_image(name);
