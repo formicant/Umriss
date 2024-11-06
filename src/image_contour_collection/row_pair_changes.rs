@@ -8,14 +8,14 @@ pub enum RowPairChangeKind { Top, Bottom, Both }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RowPairChange {
     pub kind: RowPairChangeKind,
-    pub x: u32,
+    pub x: i32,
 }
 
 /// Iterates changes in either of the two adjacent image rows,
 /// from left to right.
 pub struct RowPairChangeIter<'a> {
-    top_changes: &'a[u32],
-    bottom_changes: &'a[u32],
+    top_changes: &'a[i32],
+    bottom_changes: &'a[i32],
     top_index: usize,
     bottom_index: usize,
 }
@@ -23,7 +23,7 @@ pub struct RowPairChangeIter<'a> {
 impl<'a> RowPairChangeIter<'a> {
     /// Looks at the changes of two rows of the image
     /// and returns a row pair change iterator.
-    pub fn new(top_changes: &'a[u32], bottom_changes: &'a[u32]) -> Self {
+    pub fn new(top_changes: &'a[i32], bottom_changes: &'a[i32]) -> Self {
         Self { top_changes, bottom_changes, top_index: 0, bottom_index: 0 }
     }
 }
@@ -75,7 +75,7 @@ mod tests {
             RowPairChange{ kind: RowPairChangeKind::Bottom, x: 42 },
         ]
     )]
-    fn pixel_row(run_top: &[u32], run_bottom: &[u32], expected: Vec<RowPairChange>) {
+    fn pixel_row(run_top: &[i32], run_bottom: &[i32], expected: Vec<RowPairChange>) {
         let actual = RowPairChangeIter::new(run_top, run_bottom);
         assert!(actual.eq(expected));
     }

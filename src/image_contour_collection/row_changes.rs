@@ -2,7 +2,7 @@ use image::{buffer::Pixels, Luma};
 
 /// Marks the end of changes iteration.
 /// Is greater than any coordinate.
-pub const END: u32 = u32::MAX;
+pub const END: i32 = i32::MAX;
 
 /// Iterates x coordinates in the row of pixels where changes occur, from left to right.
 /// 
@@ -23,7 +23,7 @@ pub struct RowChangeIter<'a> {
     row: Option<Pixels<'a, Luma<u8>>>,
     edge_value: bool,
     previous: bool,
-    x: u32,
+    x: i32,
 }
 
 impl<'a> RowChangeIter<'a> {
@@ -39,7 +39,7 @@ impl<'a> RowChangeIter<'a> {
 }
 
 impl<'a> Iterator for RowChangeIter<'a> {
-    type Item = u32;
+    type Item = i32;
     
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(row) = &mut self.row {
@@ -94,7 +94,7 @@ mod tests {
     #[test_case(vec![0, 1, 0], true, vec![0, 1, 2, 3, END])]
     #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], false, vec![0, 2, 5, 6, 7, 8, END])]
     #[test_case(vec![1, 1, 0, 0, 0, 1, 0, 1], true, vec![2, 5, 6, 7, END])]
-    fn pixel_row(row_pixels: Vec<u8>, edge_value: bool, expected: Vec<u32>) {
+    fn pixel_row(row_pixels: Vec<u8>, edge_value: bool, expected: Vec<i32>) {
         let width = row_pixels.len() as u32;
         let image = GrayImage::from_vec(width, 1, row_pixels).unwrap();
         let row = image.rows().next().unwrap();

@@ -40,7 +40,7 @@ pub enum FeatureKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Feature {
     pub kind: FeatureKind,
-    pub x: u32,
+    pub x: i32,
 }
 
 /// A final-state automaton that takes row pair changes as input
@@ -52,7 +52,7 @@ pub struct FeatureAutomaton {
     state: usize,
     
     /// Stores x coordinate of the representative point of the feature.
-    feature_x: u32,
+    feature_x: i32,
 }
 
 impl FeatureAutomaton {

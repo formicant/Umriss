@@ -50,15 +50,15 @@ impl<'a> Contour<'a> {
     }
 }
 
-impl<'a> Orthopolygonlike<u32> for Contour<'a> {
-    fn even_vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<u32>> {
+impl<'a> Orthopolygonlike for Contour<'a> {
+    fn even_vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<i32>> {
         let start_index = self.hierarchy[self.index.get()].head_point_index;
         EvenVertexIter { point_list: self.point_list, start_index, current_index: Some(start_index) }
     }
 }
 
-impl<'a> Polygonlike<u32> for Contour<'a> {
-    fn vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<u32>> {
+impl<'a> Polygonlike<i32> for Contour<'a> {
+    fn vertices(&self) -> impl Iterator<Item = euclid::default::Point2D<i32>> {
         self.even_vertices()
             .circular_pairs()
             .flat_map(|(p0, p1)| [p0, Point2D::new(p1.x, p0.y)])
@@ -73,7 +73,7 @@ pub struct EvenVertexIter<'a> {
 }
 
 impl<'a> Iterator for EvenVertexIter<'a> {
-    type Item = Point2D<u32>;
+    type Item = Point2D<i32>;
     
     fn next(&mut self) -> Option<Self::Item> {
         self.current_index.map(|index| {

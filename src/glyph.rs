@@ -10,7 +10,7 @@ use crate::image_contour_collection::Contour;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Glyph {
     size: Size2D<i32>,
-    contours: Vec<Orthopolygon<i32>>,
+    contours: Vec<Orthopolygon>,
 }
 
 impl Glyph {
@@ -20,10 +20,10 @@ impl Glyph {
     /// 
     /// The lifespan of the glyph is independent from the lifespan of the contour collection.
     pub fn from_contour(outer_contour: Contour) -> (Self, Point2D<i32>) {
-        let mut x_min = u32::MAX;
-        let mut x_max = 0;
-        let mut y_min = u32::MAX;
-        let mut y_max = 0;
+        let mut x_min = i32::MAX;
+        let mut x_max = i32::MIN;
+        let mut y_min = i32::MAX;
+        let mut y_max = i32::MIN;
         
         for Point2D { x, y, .. } in outer_contour.even_vertices() {
             if x < x_min { x_min = x; }
@@ -34,14 +34,14 @@ impl Glyph {
         let width = x_max - x_min + 1;
         let height = y_max - y_min + 1;
         
-        let location = Point2D::new(x_min, y_min).to_i32();
-        let size = Size2D::new(width, height).to_i32();
+        let location = Point2D::new(x_min, y_min);
+        let size = Size2D::new(width, height);
         
         let contours = iter::once(outer_contour)
             .chain(outer_contour.children())
             .map(|contour| {
                 let even_vertices = contour.even_vertices()
-                    .map(|Point2D { x, y, .. }| Point2D::new((x - x_min) as i32, (y - y_min) as i32));
+                    .map(|Point2D { x, y, .. }| Point2D::new(x - x_min, y - y_min));
                 Orthopolygon::new(even_vertices)
             })
             .collect();
@@ -55,17 +55,17 @@ impl Glyph {
     }
     
     /// Contours of the glyph. The outer contour goes first, then, the holes.
-    pub fn contours(&self) -> &[Orthopolygon<i32>] {
+    pub fn contours(&self) -> &[Orthopolygon] {
         &self.contours[..]
     }
     
     /// Returns a reference to the outer contour of the glyph.
-    pub fn outer_contour(&self) -> &Orthopolygon<i32> {
+    pub fn outer_contour(&self) -> &Orthopolygon {
         &self.contours[0]
     }
     
     /// Returns a slice of all hole contours of the glyph.
-    pub fn inner_contours(&self) -> &[Orthopolygon<i32>] {
+    pub fn inner_contours(&self) -> &[Orthopolygon] {
         &self.contours[1..]
     }
 }

@@ -31,8 +31,8 @@ pub use contours::Contour;
 /// [^1]: Takafumi Miyatake, Hitoshi Matsushima, Masakazu Ejiri, 1997:
 /// _Contour representation of binary images using run-type direction codes_.
 pub struct ImageContourCollection {
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     hierarchy: Vec<HierarchyItem>,
     pub point_list: Vec<PointListItem>,
 }
@@ -63,7 +63,7 @@ impl ImageContourCollection {
     /// instead of white ones.
     pub fn new(image: &GrayImage, inverted: bool) -> Self {
         let (width, height) = image.dimensions();
-        let mut builder = ContourCollectionBuilder::new(width, height);
+        let mut builder = ContourCollectionBuilder::new(width as i32, height as i32);
         
         // Row changes are stored in two buffers of fixed capacity to avoid allocation
         let capacity = width as usize + 2;
@@ -89,7 +89,7 @@ impl ImageContourCollection {
             
             for change in row_pair_changes {
                 // Update the point list and contour hierarchy
-                builder.add_row_pair_change(row_index as u32, change);
+                builder.add_row_pair_change(row_index as i32, change);
             }
         }
         
@@ -97,7 +97,7 @@ impl ImageContourCollection {
     }
     
     /// Gets width and height of the original image.
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub fn dimensions(&self) -> (i32, i32) {
         (self.width, self.height)
     }
     

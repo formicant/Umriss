@@ -4,8 +4,8 @@
 /// Miyatake’s `rd_code` and `w_link` fields are not stored.
 #[derive(Debug, PartialEq, Eq)]
 pub struct PointListItem {
-    pub x: u32,
-    pub y: u32,
+    pub x: i32,
+    pub y: i32,
     pub next: usize,
 }
 
@@ -23,7 +23,7 @@ impl PointListBuilder {
     
     /// Adds a point that is not yet connected to anything.
     /// Returns its index.
-    pub fn add(&mut self, x: u32, y: u32) -> usize {
+    pub fn add(&mut self, x: i32, y: i32) -> usize {
         let index = self.point_list.len();
         self.point_list.push(PointListItem { x, y, next: NONE });
         index
@@ -31,7 +31,7 @@ impl PointListBuilder {
     
     /// Adds a point connected to an existing next point.
     /// Returns the index of the new point.
-    pub fn add_with_next(&mut self, x: u32, y: u32, next: usize) -> usize {
+    pub fn add_with_next(&mut self, x: i32, y: i32, next: usize) -> usize {
         let index = self.point_list.len();
         self.point_list.push(PointListItem { x, y, next });
         index
@@ -39,7 +39,7 @@ impl PointListBuilder {
     
     /// Adds a point connected to an existing previous point.
     /// Returns the index of the new point.
-    pub fn add_with_previous(&mut self, x: u32, y: u32, previous: usize) -> usize {
+    pub fn add_with_previous(&mut self, x: i32, y: i32, previous: usize) -> usize {
         let index = self.point_list.len();
         self.point_list.push(PointListItem { x, y, next: NONE });
         self.point_list[previous].next = index;
@@ -48,7 +48,7 @@ impl PointListBuilder {
     
     /// Adds a point connected to existing next and previous points.
     /// Does not return anything.
-    pub fn add_with_next_and_previous(&mut self, x: u32, y: u32, next: usize, previous: usize){
+    pub fn add_with_next_and_previous(&mut self, x: i32, y: i32, next: usize, previous: usize){
         let index = self.point_list.len();
         self.point_list.push(PointListItem { x, y, next });
         self.point_list[previous].next = index;

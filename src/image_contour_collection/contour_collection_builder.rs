@@ -9,8 +9,8 @@ use super::point_list_builder::PointListBuilder;
 /// from changes in image rows pairs.
 pub struct ContourCollectionBuilder {
     // Original image dimensions
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     
     // Helper builders
     point_list: PointListBuilder,
@@ -25,7 +25,7 @@ pub struct ContourCollectionBuilder {
 }
 
 impl ContourCollectionBuilder {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         Self {
             width, height,
             feature_automaton: FeatureAutomaton::new(),
@@ -44,7 +44,7 @@ impl ContourCollectionBuilder {
         }
     }
     
-    pub fn add_row_pair_change(&mut self, y: u32, change: RowPairChange) {
+    pub fn add_row_pair_change(&mut self, y: i32, change: RowPairChange) {
         // Detect next contour feature
         let Feature { kind, x } = self.feature_automaton.step(change);
         

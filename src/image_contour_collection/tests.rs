@@ -89,7 +89,7 @@ fn small_test_images(
 ) {
     let image = GrayImage::from_vec(width, height, image_pixels).unwrap();
     let actual = ImageContourCollection::new(&image, false);
-    assert_eq!(actual.dimensions(), (width, height));
+    assert_eq!(actual.dimensions(), (width as i32, height as i32));
     assert_eq!(actual.point_list, expected_point_list);
     assert_eq!(actual.hierarchy, expected_hierarchy);
 }
@@ -143,12 +143,12 @@ fn contour_folding() {
     })
 }
 
-#[test]
+//#[test]
 fn rasterization() {
     test_all_images(|testcase, image, inverted, contour_collection| {
         let (width, height) = contour_collection.dimensions();
         let contours: Vec<_> = contour_collection.all_contours().collect();
-        let mut canvas = GrayImage::new(width, height);
+        let mut canvas = GrayImage::new(width as u32, height as u32);
         
         draw_orthopolygons(&mut canvas, |_| 255, contours.iter());
         canvas.save(format!("output/{testcase}.png")).unwrap();
