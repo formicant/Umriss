@@ -7,7 +7,7 @@ mod book;
 mod more_itertools;
 mod approximation;
 
-use std::fs;
+use std::{fs, time::Duration};
 use std::time::Instant;
 use book::Book;
 use image_contour_collection::ImageContourCollection;
@@ -56,12 +56,17 @@ fn process_test_images() {
     fs::create_dir_all("output").unwrap();
     println!("Processing test images:");
     let inverted = true;
+    
+    let mut time = Duration::ZERO;
     for (name, image) in get_test_images() {
         println!("- {name}");
         let contour_collection = ImageContourCollection::new(&image, inverted);
+        let start = Instant::now();
         let approximation: Vec<_> = contour_collection.all_contours().map(|c| to_accurate_polygon(&c)).collect();
+        time += start.elapsed();
         write_contour_collection_as_svg_file(&contour_collection, approximation, &name);
     }
+    println!("{:.3} ms", time.as_secs_f64() * 1000.0);
     println!("");
 }
 

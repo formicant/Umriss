@@ -1,58 +1,48 @@
-use std::cmp::max;
-use euclid::default::{Point2D, Vector2D};
+use euclid::{default::{Point2D, Vector2D}, vec2};
 use crate::more_itertools::MoreIterTools;
 use crate::geometry::{Orthopolygonlike, Polygon};
 
 pub fn to_accurate_polygon<Ortho: Orthopolygonlike>(orthopolygon: &Ortho) -> Polygon<f64> {
     let mut vertices = Vec::new();
     
-    for (p0, p1, p2, p3) in orthopolygon.vertices().circular_tuples() {
-        // We need 4 points and 3 segments between them
-        let (len_prev, dir_prev) = get_len_and_dir(p1 - p0);
-        let (len_cur,  dir_cur ) = get_len_and_dir(p2 - p1);
-        let (len_next, dir_next) = get_len_and_dir(p3 - p2);
+    let edges = orthopolygon.edges().map(Edge::new);
+    for (prev, cur, next) in edges.circular_tuples() {
+        let is_convex = prev.direction + next.direction == Vector2D::zero();
+        let is_pimple = is_convex && !cur.is_long;
+        let is_pin = is_pimple && prev.is_long && next.is_long;
+        let starts_at_corner = prev.is_long && cur.is_long;
         
-        // Both the previous and the next segment lie on the same side of the current
-        let is_convex = dir_prev + dir_next == Vector2D::zero();
-        // The previous and the current segments form a corner
-        let is_corner = len_prev > 1 && len_cur > 1;
-        // Very long horizontal or vertical segment
-        let is_too_long = len_cur > MAX_SLOPE_RATIO;
-        // Segment of length 1 and surrounded by two segments on the same side
-        let is_dimple = is_convex && len_cur == 1;
-        // Segment of length 1 and surrounded by two long segments on the same side
-        let is_pin = is_dimple && len_prev > 1 && len_next > 1;
-        
-        if is_corner {
+        if starts_at_corner {
             // Add the corner point
-            let corner = p1.to_f64() + (dir_cur - dir_prev).to_f64() * CORNER_OFFSET;
-            vertices.push(corner);
+            let offset_vector = (cur.direction - prev.direction).to_f64() * CORNER_OFFSET;
+            vertices.push(cur.start + offset_vector);
         }
         
-        if is_pin || is_too_long {
+        if is_pin || cur.is_too_long {
             // Too long segments and one pixel wide pins, instead of the center point,
             // get two points at a fixed distance from the ends
             let offset = if is_pin { CORNER_OFFSET } else { MAX_SLOPE_RATIO as f64 * 0.5 };
-            let offset_vector = dir_cur.to_f64() * offset;
-            vertices.push(p1.to_f64() + offset_vector);
-            vertices.push(p2.to_f64() - offset_vector);
+            let offset_vector = cur.direction.to_f64() * offset;
+            vertices.push(cur.start + offset_vector);
+            vertices.push(cur.end - offset_vector);
         } else {
-            let center = p1.to_f64().lerp(p2.to_f64(), 0.5);
             // Most new vertices will be at the segment centers,
-            // except dimples that are offset
-            if is_dimple {
-                let offset_dir = if len_prev > 1 {
-                    -dir_cur
-                } else if len_next > 1 {
-                    dir_cur
+            // except pimples that are offset
+            let center = cur.start.lerp(cur.end, 0.5);
+            if is_pimple {
+                let offset_direction = if prev.is_long {
+                    -cur.direction
+                } else if next.is_long{
+                    cur.direction
                 } else {
-                    -dir_prev
+                    -prev.direction
                 };
-                vertices.push(center + offset_dir.to_f64() * CORNER_OFFSET);
+                let offset_vector = offset_direction.to_f64() * CORNER_OFFSET;
+                vertices.push(center + offset_vector);
             } else {
                 vertices.push(center);
             }
-        }
+        } 
     }
     
     if vertices.len() == 4 {
@@ -63,22 +53,36 @@ pub fn to_accurate_polygon<Ortho: Orthopolygonlike>(orthopolygon: &Ortho) -> Pol
     }
 }
 
-fn get_len_and_dir(v: Vector2D<i32>) -> (i32, Vector2D<i32>) {
-    let len = max(v.x.abs(), v.y.abs());
-    if len <= 0 {
-        println!("Warinig! {v:?}");
+/// Temporarily stores an edge with some calculated values.
+#[derive(Debug, Clone, Copy)]
+struct Edge {
+    start: Point2D<f64>,
+    end: Point2D<f64>,
+    direction: Vector2D<i32>,
+    is_long: bool,
+    is_too_long: bool,
+}
+
+impl Edge {
+    pub fn new(points: (Point2D<i32>, Point2D<i32>)) -> Self {
+        let (start, end) = points;
+        let vector = end - start;
+        let direction = vec2(vector.x.signum(), vector.y.signum());
+        let length = i32::max(vector.x.abs(), vector.y.abs());
+        let is_long = length > 1;
+        let is_too_long = length > MAX_SLOPE_RATIO;
+        Self { start: start.to_f64(), end: end.to_f64(), direction, is_long, is_too_long }
     }
-    let dir = v / len;
-    (len, dir)
 }
 
 fn simplify(vertices: Vec<Point2D<f64>>) -> Vec<Point2D<f64>> {
     vertices.iter()
         .circular_tuples()
         .filter_map(|(&p0, &p1, &p2)| {
-            let dir_prev = (p1 - p0).normalize();
-            let dir_next = (p2 - p1).normalize();
-            let collinear = (dir_next - dir_prev).square_length() <= SQUARED_EPSILON;
+            let d0 = p0.x * (p1.y - p2.y);
+            let d1 = p1.x * (p2.y - p0.y);
+            let d2 = p2.x * (p0.y - p1.y);
+            let collinear = (d0 + d1 + d2).abs() <= EPSILON;
             if collinear { None } else { Some(p1) }
         })
         .collect()
@@ -86,4 +90,4 @@ fn simplify(vertices: Vec<Point2D<f64>>) -> Vec<Point2D<f64>> {
 
 const MAX_SLOPE_RATIO: i32 = 12;
 const CORNER_OFFSET: f64 = 0.25;
-const SQUARED_EPSILON: f64 = 1e-6;
+const EPSILON: f64 = 1e-3;
