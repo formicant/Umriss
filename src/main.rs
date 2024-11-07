@@ -5,6 +5,7 @@ mod silly_svg;
 mod glyph;
 mod book;
 mod more_itertools;
+mod approximation;
 
 use std::fs;
 use std::time::Instant;
@@ -12,6 +13,7 @@ use book::Book;
 use image_contour_collection::ImageContourCollection;
 use silly_svg::{write_contour_collection_as_svg_file, write_book_as_multiple_svg_files};
 use test_images::{get_test_images, get_test_image};
+use approximation::to_accurate_polygon;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -57,7 +59,8 @@ fn process_test_images() {
     for (name, image) in get_test_images() {
         println!("- {name}");
         let contour_collection = ImageContourCollection::new(&image, inverted);
-        write_contour_collection_as_svg_file(&contour_collection, &name);
+        let approximation: Vec<_> = contour_collection.all_contours().map(|c| to_accurate_polygon(&c)).collect();
+        write_contour_collection_as_svg_file(&contour_collection, approximation, &name);
     }
     println!("");
 }

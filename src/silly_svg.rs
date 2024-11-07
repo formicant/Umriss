@@ -2,15 +2,21 @@ use std::fs;
 use itertools::Itertools;
 use euclid::default::{Point2D, Vector2D, Size2D};
 use crate::book::{Book, Page, GlyphKind};
-use crate::geometry::Orthopolygonlike;
+use crate::geometry::{Orthopolygonlike, Polygonlike, Polygon};
 use crate::image_contour_collection::ImageContourCollection;
 
-pub fn write_contour_collection_as_svg_file(contour_collection: &ImageContourCollection, name: &str) {
+pub fn write_contour_collection_as_svg_file(contour_collection: &ImageContourCollection, approximation: Vec<Polygon<f64>>, name: &str) {
     let (width, height) = contour_collection.dimensions();
     let contours: Vec<_> = contour_collection.all_contours().collect();
-    let path = get_path(Point2D::zero(), contours.iter(), None);
+    let path = get_ortho_path(Point2D::zero(), contours.iter(), None);
+    let approx_path = get_polygon_path(Point2D::zero(), approximation.iter(), None);
     let svg_contents = format!(r#"<svg version="1.1" width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
- {path}
+ <g opacity="0.1">
+  {path}
+ </g>
+ <g fill="none" stroke="blue" stroke-width="0.2">
+  {approx_path}
+ </g>
 </svg>"#);
     fs::write(format!("output/{name}.svg"), svg_contents).unwrap();
 }
@@ -30,7 +36,7 @@ pub fn write_book_as_multiple_svg_files(book: &Book) {
 
 fn get_shared_contents(book: &Book) -> Option<String> {
     let mut glyph_definitions = book.shared_glyphs()
-        .map(|g| get_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
+        .map(|g| get_ortho_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
     let definition_lines = glyph_definitions.join("\n  ");
     if definition_lines.len() > 0 {
         Some(format!(r#"<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -46,10 +52,10 @@ fn get_shared_contents(book: &Book) -> Option<String> {
 fn get_page_contents(page: &Page) -> String {
     let Size2D { width, height, .. } = page.size();
     let mut glyph_definitions = page.shared_glyphs()
-        .map(|g| get_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
+        .map(|g| get_ortho_path(Point2D::zero(), g.glyph().contours().iter(), Some(g.id())));
     let mut glyphs = page.glyph_entries()
         .map(|entry| match entry.kind() {
-            GlyphKind::Unique => get_path(entry.location(), entry.glyph().contours().iter(), None),
+            GlyphKind::Unique => get_ortho_path(entry.location(), entry.glyph().contours().iter(), None),
             GlyphKind::PageShared => format!("<use x=\"{}\" y=\"{}\" href=\"#{}\" fill=\"red\"/>", entry.location().x, entry.location().y, entry.id()),
             GlyphKind::BookShared => format!("<use x=\"{}\" y=\"{}\" href=\"_.svg#{}\" fill=\"blue\"/>", entry.location().x, entry.location().y, entry.id()),
         });
@@ -65,7 +71,7 @@ fn get_page_contents(page: &Page) -> String {
 </svg>"#)
 }
 
-fn get_path<'a, Ortho: Orthopolygonlike + 'a>(
+fn get_ortho_path<'a, Ortho: Orthopolygonlike + 'a>(
     location: Point2D<i32>,
     contours: impl Iterator<Item = &'a Ortho>,
     object_id: Option<usize>,
@@ -93,6 +99,42 @@ fn get_path<'a, Ortho: Orthopolygonlike + 'a>(
         }
         let relative = start.unwrap() - previous_vertex.unwrap();
         nodes.push(format!("h{}z", relative.x));
+        previous_vertex = start;
+    }
+    
+    let data = nodes.concat();
+    let id_parameter = if let Some(id) = object_id { format!(r#"id="{id}" "#) } else { String::new() };
+    format!(r#"<path {id_parameter}d="{data}"/>"#)
+}
+
+fn get_polygon_path<'a, Polygon: Polygonlike<f64> + 'a>(
+    location: Point2D<f64>,
+    contours: impl Iterator<Item = &'a Polygon>,
+    object_id: Option<usize>,
+) -> String {
+    let mut nodes = Vec::new();
+    let mut previous_vertex = None;
+    
+    for contour in contours {
+        let mut start = None;
+        for vertex in contour.vertices() {
+            if let Some(previous) = previous_vertex {
+                let relative: Vector2D<f64> = vertex - previous;
+                if let None = start {
+                    start = Some(vertex);
+                    nodes.push(format!("m{},{}", relative.x, relative.y));
+                } else {
+                    nodes.push(format!("l{},{}", relative.x, relative.y));
+                }
+            } else {
+                let absolute = location + vertex.to_vector();
+                start = Some(vertex);
+                nodes.push(format!("M{},{}", absolute.x, absolute.y));
+            }
+            previous_vertex = Some(vertex);
+        }
+        let relative = start.unwrap() - previous_vertex.unwrap();
+        nodes.push(format!("z"));
         previous_vertex = start;
     }
     
