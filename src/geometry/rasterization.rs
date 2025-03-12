@@ -23,7 +23,7 @@ pub fn draw_orthopolygons<'a, Ortho>(
     let mut parity = false;
     let mut edge_index = 0;
     let mut active_edges = BTreeSet::new();
-    let Some((mut y, _, _)) = edges.iter().next() else { return };
+    let Some(&(mut y, _, _)) = edges.iter().next() else { return };
     
     while edge_index < edges.len() || !active_edges.is_empty() {
         debug_assert!(!parity);
